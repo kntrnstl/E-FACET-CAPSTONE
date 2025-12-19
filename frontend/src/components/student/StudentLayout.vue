@@ -1,45 +1,67 @@
 <template>
-  <div class="bg-gray-200 min-h-screen flex">
+  <div class="bg-gray-100 flex min-h-screen">
     <!-- Sidebar -->
-    <StudentSidebar />
+    <StudentSidebar :active-page="activePage" />
     
     <!-- Main Content -->
-    <main class="flex-1 p-6 ml-64">
-      <!-- Header Slot -->
-      <div class="flex justify-between items-center bg-green-800 text-white px-6 py-3 rounded-t-xl mb-6">
-        <!-- Left slot for search or title -->
-        <div class="flex-1">
-          <slot name="header-left">
-            <!-- Default content if no slot provided -->
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              class="w-1/3 p-2 rounded-md text-gray-800 focus:outline-none"
-            >
-          </slot>
+    <main class="flex-1 p-6 ml-64 overflow-y-auto min-h-screen bg-gray-100">
+      <!-- Page Header -->
+      <header class="flex justify-between items-center bg-green-800 text-white px-6 py-3 rounded-t-xl mb-4">
+        <div class="flex items-center w-full gap-4">
+          <slot name="header-left"></slot>
         </div>
-        
-        <!-- Right slot for user avatar -->
-        <div class="w-10 h-10 bg-white text-green-800 rounded-full flex items-center justify-center text-xl">
-          <slot name="header-right">
-            👤
-          </slot>
-        </div>
-      </div>
+        <div class="w-10 h-10 bg-white text-green-800 rounded-full flex items-center justify-center text-xl">👤</div>
+      </header>
       
-      <!-- Main Content Slot -->
-      <slot></slot>
+      <!-- Page Content -->
+      <div class="bg-white rounded-b-xl shadow p-6">
+        <slot></slot>
+      </div>
     </main>
   </div>
 </template>
 
+<style scoped>
+/* Ensure main content area scrolls */
+main {
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Custom scrollbar for Webkit browsers */
+main::-webkit-scrollbar {
+  width: 8px;
+}
+
+main::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+</style>
+
 <script>
-import StudentSidebar from './StudentSidebar.vue'
+import StudentSidebar from './StudentSidebar.vue';
 
 export default {
   name: 'StudentLayout',
   components: {
     StudentSidebar
+  },
+  props: {
+    activePage: {
+      type: String,
+      default: ''
+    }
   }
 }
 </script>

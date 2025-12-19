@@ -1,9 +1,9 @@
 <template>
-    <div class="bg-gray-900 flex items-center justify-center min-h-screen py-4">
+  <div class="bg-gray-900 flex items-center justify-center min-h-screen py-4">
     <!-- Background Image -->
-        <div class="absolute inset-0">
-        <img src="/background.png" alt="Background" class="w-full h-full object-cover blur-sm brightness-75">
-        </div>
+    <div class="absolute inset-0">
+      <img src="/background.png" alt="Background" class="w-full h-full object-cover blur-sm brightness-75">
+    </div>
 
     <!-- Login Card -->
     <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 rounded-xl shadow-lg w-[28rem]">
@@ -124,7 +124,8 @@ export default {
         text: '',
         type: ''
       },
-      isLoading: false
+      isLoading: false,
+      isRedirecting: false
     }
   },
 
@@ -147,13 +148,13 @@ export default {
     },
 
     goToSignup() {
-      window.history.pushState({}, '', '/signup');
-      window.location.reload();
+      this.$router.push('/signup');
     },
 
     async handleLogin() {
       // Clear previous messages
       this.message.text = '';
+      this.isRedirecting = false;
       
       // Validate form
       if (!this.validateForm()) {
@@ -181,54 +182,63 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(loginData),
-          credentials: 'include' // Important for session cookies
+          credentials: 'include'
         });
 
         console.log('📥 Response status:', response.status);
         
         const data = await response.json();
-        console.log('📥 Response data:', data);
+        console.log('📥 Full response data:', data);
 
         if (data.status === 'success') {
           console.log('✅ Login successful!');
           console.log('👤 User data:', data.user);
-          console.log('🎯 Original redirect:', data.redirect);
           
           // Store user data in localStorage
           if (data.user) {
             localStorage.setItem('user', JSON.stringify(data.user));
             console.log('💾 User saved to localStorage');
+            
+            // Show success message with animation
+            this.message = {
+              text: data.message || 'Login successful! Redirecting...',
+              type: 'success'
+            };
+            
+            this.isRedirecting = true;
+            
+            // Wait 1.5 seconds to show the success message
+            setTimeout(() => {
+              // Determine where to redirect based on user role
+              let redirectPath = '/';
+              
+              if (data.user.role === 'admin') {
+                redirectPath = '/admin-dashboard';
+              } else if (data.user.role === 'student') {
+                redirectPath = '/student-dashboard';
+              } else if (data.user.role === 'user') {
+                redirectPath = '/student-dashboard'; // Treat 'user' as student
+              } else {
+                console.error('❌ Unknown role:', data.user.role);
+                this.message = {
+                  text: 'Unknown user role. Please contact administrator.',
+                  type: 'error'
+                };
+                this.isRedirecting = false;
+                return;
+              }
+              
+              console.log('🎯 Redirecting to:', redirectPath);
+              this.$router.push(redirectPath);
+              
+            }, 1500);
+          } else {
+            console.error('❌ No user data in response');
+            this.message = {
+              text: 'Login error: No user data received from server',
+              type: 'error'
+            };
           }
-
-          // Determine redirect URL
-          let redirectUrl = data.redirect;
-          
-          // If no redirect from API, create one based on role
-          if (!redirectUrl && data.user && data.user.role) {
-            redirectUrl = data.user.role === 'admin' 
-              ? '/admin-dashboard.html' 
-              : '/student-dashboard.html';
-            console.log('🎯 Role-based redirect:', redirectUrl);
-          }
-          
-          // Final fallback
-          if (!redirectUrl) {
-            redirectUrl = '/dashboard.html';
-            console.log('🎯 Fallback redirect:', redirectUrl);
-          }
-
-          // Show success message
-          this.message = {
-            text: data.message || 'Login successful! Redirecting...',
-            type: 'success'
-          };
-          
-          console.log('🔄 Redirecting to:', redirectUrl);
-          
-          // Redirect after 1 second
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 1000);
           
         } else {
           console.log('❌ Login failed:', data.message);
@@ -266,18 +276,30 @@ export default {
   mounted() {
     console.log('🔍 Checking if user is already logged in...');
     
-    // Optional: Check if user is already logged in
+    // Check if user is already logged in and redirect if needed
     const user = localStorage.getItem('user');
     if (user) {
-      console.log('👤 Found user in localStorage:', JSON.parse(user));
-      
-      // You could auto-redirect if user is already logged in
-      // const userData = JSON.parse(user);
-      // if (userData.role === 'admin') {
-      //   window.location.href = '/admin-dashboard.html';
-      // } else {
-      //   window.location.href = '/student-dashboard.html';
-      // }
+      try {
+        const userData = JSON.parse(user);
+        console.log('👤 Found user in localStorage:', userData);
+        
+        // Auto-redirect if user is already logged in
+        if (userData.user_id && userData.role) {
+          let redirectPath = '/';
+          
+          if (userData.role === 'admin') {
+            redirectPath = '/admin-dashboard';
+          } else if (userData.role === 'student' || userData.role === 'user') {
+            redirectPath = '/student-dashboard';
+          }
+          
+          console.log('🔄 Auto-redirecting to:', redirectPath);
+          this.$router.push(redirectPath);
+        }
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        localStorage.removeItem('user'); // Clear corrupted data
+      }
     }
   }
 }
@@ -298,5 +320,34 @@ html, body {
   min-height: 100vh;
   width: 100%;
   position: relative;
+}
+
+/* Success message animation */
+@keyframes fadeInSuccess {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    background-color: #d1fae5;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: #d1fae5;
+  }
+}
+
+.bg-green-100 {
+  animation: fadeInSuccess 0.5s ease-out;
+}
+
+/* Redirecting animation */
+.redirecting-message {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
 }
 </style>
