@@ -1,15 +1,15 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+// vite.config.js
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
+      "/api": {
+        target: "http://localhost:3000", // backend port mo
+        changeOrigin: true,
+      },
     },
-    port: 5173  // Optional: Set specific port
-  }
-})
+  },
+});

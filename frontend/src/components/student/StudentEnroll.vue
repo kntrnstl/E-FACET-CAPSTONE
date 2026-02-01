@@ -1,38 +1,37 @@
 <template>
   <StudentLayout active-page="enrollment">
-    <!-- Header Slot -->
     <template #header-left>
-      <input 
-        type="text" 
-        placeholder="Search..." 
+      <input
+        type="text"
+        placeholder="Search..."
         class="w-1/3 p-2 rounded-md text-gray-800 focus:outline-none"
         v-model="searchQuery"
-      >
+      />
     </template>
-    
-    <!-- Main Content -->
+
     <div>
       <h1 class="text-3xl font-bold text-gray-800 mb-6">Enrollment & Requirements</h1>
 
       <!-- Tabs -->
       <div class="flex space-x-2 mb-6">
-        <button 
+        <button
           @click="activeTab = 'requirements'"
           :class="[
             'px-4 py-2 rounded-md font-medium transition-colors',
-            activeTab === 'requirements' 
-              ? 'bg-green-700 text-white' 
+            activeTab === 'requirements'
+              ? 'bg-green-700 text-white'
               : 'bg-gray-300 hover:bg-gray-400'
           ]"
         >
           📋 Requirements
         </button>
-        <button 
+
+        <button
           @click="activeTab = 'reservation'"
           :class="[
             'px-4 py-2 rounded-md font-medium transition-colors',
-            activeTab === 'reservation' 
-              ? 'bg-green-700 text-white' 
+            activeTab === 'reservation'
+              ? 'bg-green-700 text-white'
               : 'bg-gray-300 hover:bg-gray-400'
           ]"
         >
@@ -41,206 +40,180 @@
       </div>
 
       <!-- REQUIREMENTS SECTION -->
-      <section v-if="activeTab === 'requirements'" class="bg-white p-6 rounded-xl shadow border border-gray-200">
-        <h2 class="bg-green-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">Available Courses</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- TDC Card -->
-          <div class="border-2 border-green-700 rounded-xl p-6 hover:shadow-lg transition-shadow self-start">
+      <section
+        v-if="activeTab === 'requirements'"
+        class="bg-white p-6 rounded-xl shadow border border-gray-200"
+      >
+        <h2 class="bg-green-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">
+          Available Courses
+        </h2>
+
+        <div v-if="loadingCourses" class="text-center py-10 text-gray-600">
+          Loading courses...
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            v-for="course in filteredCourses"
+            :key="course.id"
+            class="border-2 border-green-700 rounded-xl p-6 hover:shadow-lg transition-shadow self-start"
+          >
             <div class="flex justify-between items-start mb-4">
               <div>
-                <h3 class="text-xl font-bold text-green-800 mb-2">Theoretical Driving Course (TDC)</h3>
-                <p class="text-gray-700">A 15-hour classroom session about road safety and basic driving principles.</p>
+                <h3 class="text-xl font-bold text-green-800 mb-2">
+                  {{ course.course_name }} ({{ course.course_code }})
+                </h3>
+                <p class="text-gray-700">
+                  {{ course.description || "—" }}
+                </p>
               </div>
-              <span class="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded">Beginner</span>
+
+              <span class="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded">
+                Active
+              </span>
             </div>
-            
+
             <!-- Requirements Toggle Button -->
-            <button 
-              @click="showTDCRequirements = !showTDCRequirements"
+            <button
+              @click="toggleRequirements(course)"
               class="w-full flex items-center justify-between text-green-700 font-medium hover:text-green-800 transition-colors mb-3 px-3 py-2 bg-green-50 rounded-lg hover:bg-green-100"
             >
               <div class="flex items-center gap-2">
                 <span>📋</span>
-                <span>{{ showTDCRequirements ? 'Hide Requirements' : 'View Requirements' }}</span>
+                <span>
+                  {{ showReqMap[course.id] ? "Hide Requirements" : "View Requirements" }}
+                </span>
               </div>
-              <span class="text-lg transform transition-transform duration-300" :class="{ 'rotate-180': showTDCRequirements }">
+
+              <span
+                class="text-lg transform transition-transform duration-300"
+                :class="{ 'rotate-180': showReqMap[course.id] }"
+              >
                 ▼
               </span>
             </button>
-            
-            <!-- Requirements List - Smooth Expand/Collapse -->
-            <div class="overflow-hidden transition-all duration-300 ease-in-out"
-                :style="{ 
-                  maxHeight: showTDCRequirements ? '200px' : '0px', 
-                  marginTop: showTDCRequirements ? '0.75rem' : '0',
-                  paddingTop: showTDCRequirements ? '0.75rem' : '0',
-                  borderTopWidth: showTDCRequirements ? '1px' : '0'
-                }">
-              <div v-if="showTDCRequirements">
+
+            <!-- Requirements List -->
+            <div
+              class="overflow-hidden transition-all duration-300 ease-in-out"
+              :style="{
+                maxHeight: showReqMap[course.id] ? '220px' : '0px',
+                marginTop: showReqMap[course.id] ? '0.75rem' : '0',
+                paddingTop: showReqMap[course.id] ? '0.75rem' : '0',
+                borderTopWidth: showReqMap[course.id] ? '1px' : '0'
+              }"
+            >
+              <div v-if="showReqMap[course.id]">
                 <h4 class="font-semibold text-gray-800 mb-2">Requirements:</h4>
-                <ul class="space-y-1.5 text-sm text-gray-700">
-                  <li class="flex items-start gap-2">
+
+                <div v-if="loadingReqMap[course.id]" class="text-sm text-gray-500">
+                  Loading requirements...
+                </div>
+
+                <ul
+                  v-else-if="(requirementsMap[course.id] || []).length"
+                  class="space-y-1.5 text-sm text-gray-700"
+                >
+                  <li
+                    v-for="r in requirementsMap[course.id]"
+                    :key="r.requirement_id"
+                    class="flex items-start gap-2"
+                  >
                     <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    Photocopy of valid ID (Passport, PRC, etc.)
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    2 pieces 1x1 ID picture (white background)
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    Completed application form
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    Student permit application fee
+                    {{ r.requirement_text }}
                   </li>
                 </ul>
+
+                <p v-else class="text-sm text-gray-500">— No requirements found</p>
               </div>
             </div>
-            
+
             <!-- Course Details -->
             <div class="grid grid-cols-2 gap-4 mt-4">
               <div class="bg-gray-50 p-3 rounded-lg">
                 <p class="text-sm text-gray-600">Duration</p>
-                <p class="font-semibold text-gray-800">15 Hours</p>
+                <p class="font-semibold text-gray-800">{{ course.duration || "—" }}</p>
               </div>
+
               <div class="bg-gray-50 p-3 rounded-lg">
                 <p class="text-sm text-gray-600">Course Fee</p>
-                <p class="font-semibold text-green-700">₱2,000</p>
+                <p class="font-semibold text-green-700">
+                  ₱{{ Number(course.course_fee || 0).toLocaleString() }}
+                </p>
               </div>
             </div>
-            
+
             <!-- Action Button -->
-            <button 
-              @click="enrollCourse('tdc')"
+            <button
+              @click="enrollCourse(course)"
               class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
-              Enroll in TDC
+              Enroll
             </button>
           </div>
 
-          <!-- PDC Card -->
-          <div class="border-2 border-green-700 rounded-xl p-6 hover:shadow-lg transition-shadow self-start">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <h3 class="text-xl font-bold text-green-800 mb-2">Practical Driving Course (PDC)</h3>
-                <p class="text-gray-700">Hands-on training for actual driving, parking, and road safety.</p>
-              </div>
-              <span class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">Intermediate</span>
-            </div>
-            
-            <!-- Requirements Toggle Button -->
-            <button 
-              @click="showPDCRequirements = !showPDCRequirements"
-              class="w-full flex items-center justify-between text-green-700 font-medium hover:text-green-800 transition-colors mb-3 px-3 py-2 bg-green-50 rounded-lg hover:bg-green-100"
-            >
-              <div class="flex items-center gap-2">
-                <span>📋</span>
-                <span>{{ showPDCRequirements ? 'Hide Requirements' : 'View Requirements' }}</span>
-              </div>
-              <span class="text-lg transform transition-transform duration-300" :class="{ 'rotate-180': showPDCRequirements }">
-                ▼
-              </span>
-            </button>
-            
-            <!-- Requirements List - Smooth Expand/Collapse -->
-            <div class="overflow-hidden transition-all duration-300 ease-in-out"
-                :style="{ 
-                  maxHeight: showPDCRequirements ? '200px' : '0px', 
-                  marginTop: showPDCRequirements ? '0.75rem' : '0',
-                  paddingTop: showPDCRequirements ? '0.75rem' : '0',
-                  borderTopWidth: showPDCRequirements ? '1px' : '0'
-                }">
-              <div v-if="showPDCRequirements">
-                <h4 class="font-semibold text-gray-800 mb-2">Requirements:</h4>
-                <ul class="space-y-1.5 text-sm text-gray-700">
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    Valid Student Permit
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    Medical Certificate (from LTO-accredited clinic)
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    2 pieces 2x2 ID picture (white background)
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    TDC Certificate of Completion
-                  </li>
-                </ul>
-              </div>
-            </div>
-            
-            <!-- Course Details -->
-            <div class="grid grid-cols-2 gap-4 mt-4">
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-600">Duration</p>
-                <p class="font-semibold text-gray-800">10 Hours</p>
-              </div>
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-600">Course Fee</p>
-                <p class="font-semibold text-green-700">₱4,500</p>
-              </div>
-            </div>
-            
-            <!-- Action Button -->
-            <button 
-              @click="enrollCourse('pdc')"
-              class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-            >
-              Enroll in PDC
-            </button>
+          <div v-if="!filteredCourses.length" class="text-center text-gray-500 py-10 md:col-span-2">
+            No courses found.
           </div>
         </div>
       </section>
 
       <!-- RESERVATION SECTION -->
-      <section v-if="activeTab === 'reservation'" class="bg-white p-6 rounded-xl shadow border border-gray-200">
-        <h2 class="bg-green-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">Reserve a Slot</h2>
+      <section
+        v-if="activeTab === 'reservation'"
+        class="bg-white p-6 rounded-xl shadow border border-gray-200"
+      >
+        <h2 class="bg-green-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">
+          Reserve a Slot
+        </h2>
 
-        <!-- Calendar Section -->
+        <!-- Course filter affects calendar -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Course</label>
+          <select
+            v-model="reservationForm.course"
+            @change="onCourseChange"
+            class="w-full md:w-1/2 border-2 border-green-700 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-700 transition-colors"
+            required
+          >
+            <option value="" disabled>Select a course</option>
+            <option v-for="c in courses" :key="c.id" :value="String(c.id)">
+              {{ c.course_name }} ({{ c.course_code }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Calendar -->
         <div class="border-2 border-green-700 rounded-xl p-6 mb-8">
           <div class="flex justify-between items-center mb-6">
-            <button 
+            <button
               @click="previousMonth"
               class="p-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
             >
               ◀ Previous
             </button>
             <h3 class="text-xl font-bold text-green-800">{{ currentMonth }} {{ currentYear }}</h3>
-            <button 
+            <button
               @click="nextMonth"
               class="p-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
             >
               Next ▶
             </button>
           </div>
-          
-          <!-- Calendar Grid -->
+
           <div class="grid grid-cols-7 gap-2">
-            <!-- Days Header -->
-            <div 
-              v-for="day in daysOfWeek" 
-              :key="day"
-              class="text-center font-medium text-gray-700 py-2"
-            >
+            <div v-for="day in daysOfWeek" :key="day" class="text-center font-medium text-gray-700 py-2">
               {{ day }}
             </div>
-            
-            <!-- Calendar Days -->
-            <div 
-              v-for="day in calendarDays" 
-              :key="day.date"
+
+            <div
+              v-for="day in calendarDays"
+              :key="day.key"
               :class="[
                 'p-3 text-center rounded-lg border transition-all cursor-pointer',
-                day.isCurrentMonth 
-                  ? day.available 
-                    ? 'border-green-200 bg-green-50 hover:bg-green-100' 
+                day.isCurrentMonth
+                  ? day.available
+                    ? 'border-green-200 bg-green-50 hover:bg-green-100'
                     : day.available === false && day.slots === 0
                       ? 'border-red-200 bg-red-50 hover:bg-red-100'
                       : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
@@ -250,19 +223,24 @@
               @click="selectDate(day)"
             >
               <div class="font-medium">{{ day.day }}</div>
+
               <div v-if="day.isCurrentMonth && day.available && day.slots > 0" class="text-xs mt-1 text-green-700">
-                {{ day.slots }} slot{{ day.slots !== 1 ? 's' : '' }}
+                {{ day.slots }} slot{{ day.slots !== 1 ? "s" : "" }}
               </div>
-              <div v-else-if="day.isCurrentMonth && day.available === false && day.slots === 0" class="text-xs mt-1 text-red-600">
+
+              <div
+                v-else-if="day.isCurrentMonth && day.available === false && day.slots === 0"
+                class="text-xs mt-1 text-red-600"
+              >
                 Full
               </div>
+
               <div v-else-if="day.isCurrentMonth && day.available === null" class="text-xs mt-1 text-gray-500">
                 -
               </div>
             </div>
           </div>
-          
-          <!-- Calendar Legend -->
+
           <div class="flex justify-center gap-4 mt-6 text-sm">
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
@@ -279,46 +257,75 @@
           </div>
         </div>
 
+        <!-- Available time schedules list -->
+        <div v-if="selectedDate && selectedDate.isCurrentMonth" class="mb-8">
+          <h3 class="text-lg font-bold text-gray-800 mb-3">
+            Available Time Slots for {{ formatSelectedDate(selectedDate) }}
+          </h3>
+
+          <div v-if="!reservationForm.course" class="text-gray-600">
+            Please select a course first.
+          </div>
+
+          <div v-else-if="loadingAvailability" class="text-gray-600">
+            Loading time slots...
+          </div>
+
+          <div v-else-if="availableSchedules.length === 0" class="text-gray-600">
+            No available schedules for this date.
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button
+              v-for="s in availableSchedules"
+              :key="s.schedule_id"
+              type="button"
+              @click="pickSchedule(s)"
+              :class="[
+                'p-3 border rounded-lg text-left transition-colors',
+                reservationForm.schedule_id === String(s.schedule_id)
+                  ? 'border-green-700 bg-green-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+              ]"
+            >
+              <div class="font-semibold text-gray-800">
+                {{ s.startTime }} - {{ s.endTime }}
+              </div>
+              <div class="text-sm text-gray-600">
+                Instructor: {{ s.instructor }}
+              </div>
+              <div class="text-sm" :class="Number(s.availableSlots) > 0 ? 'text-green-700' : 'text-red-600'">
+                {{ s.availableSlots }} / {{ s.totalSlots }} slots available
+              </div>
+
+              <!-- optional: show 2-day info if backend returns it -->
+              <div v-if="s.schedule_group_id" class="text-xs text-gray-500 mt-1">
+                2-day package
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- Reservation Form -->
         <form @submit.prevent="submitReservation" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Course Selection -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Select Course
-              </label>
-              <select 
-                v-model="reservationForm.course"
-                class="w-full border-2 border-green-700 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-700 transition-colors"
-                required
-              >
-                <option value="" disabled>Select a course</option>
-                <option value="tdc">Theoretical Driving Course (TDC)</option>
-                <option value="pdc">Practical Driving Course (PDC)</option>
-              </select>
-            </div>
-
             <!-- Selected Date -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Selected Date
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Selected Date</label>
               <div class="border-2 border-green-700 rounded-lg p-3 bg-green-50">
                 <div class="font-medium text-green-800">
-                  {{ selectedDate ? formatSelectedDate(selectedDate) : 'No date selected' }}
+                  {{ selectedDate ? formatSelectedDate(selectedDate) : "No date selected" }}
                 </div>
                 <div v-if="selectedDate" class="text-sm text-green-600 mt-1">
-                  {{ selectedDate.available ? selectedDate.slots + ' slot(s) available' : 'No slots available' }}
+                  {{ selectedDate.available ? selectedDate.slots + " slot(s) available" : "No slots available" }}
                 </div>
               </div>
             </div>
 
             <!-- Payment Method -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Payment Method
-              </label>
-              <select 
+              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+              <select
                 v-model="reservationForm.paymentMethod"
                 class="w-full border-2 border-green-700 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-700 transition-colors"
                 required
@@ -330,30 +337,25 @@
               </select>
             </div>
 
-            <!-- Time Slot -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Preferred Time
-              </label>
-              <select 
-                v-model="reservationForm.timeSlot"
-                class="w-full border-2 border-green-700 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-700 transition-colors"
-                required
-              >
-                <option value="" disabled>Select time slot</option>
-                <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
-                <option value="afternoon">Afternoon (1:00 PM - 5:00 PM)</option>
-                <option value="evening">Evening (6:00 PM - 9:00 PM)</option>
-              </select>
+            <!-- Picked Schedule ID -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Selected Schedule</label>
+              <div class="border rounded-lg p-3 bg-gray-50 border-gray-200">
+                <div class="text-sm text-gray-700">
+                  {{
+                    reservationForm.schedule_id
+                      ? `Schedule #${reservationForm.schedule_id} selected`
+                      : "No schedule selected (pick a time slot above)"
+                  }}
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Additional Notes -->
+          <!-- Notes -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Additional Notes (Optional)
-            </label>
-            <textarea 
+            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes (Optional)</label>
+            <textarea
               v-model="reservationForm.notes"
               rows="3"
               placeholder="Any special requests or notes..."
@@ -361,9 +363,8 @@
             ></textarea>
           </div>
 
-          <!-- Submit Button -->
           <div class="pt-4">
-            <button 
+            <button
               type="submit"
               :disabled="!canSubmitReservation"
               :class="[
@@ -373,7 +374,7 @@
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               ]"
             >
-              {{ isSubmitting ? 'Processing...' : 'Reserve Slot' }}
+              {{ isSubmitting ? "Processing..." : "Reserve Slot" }}
             </button>
           </div>
         </form>
@@ -383,274 +384,374 @@
 </template>
 
 <script>
-import StudentLayout from './StudentLayout.vue'
+import StudentLayout from "./StudentLayout.vue";
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+  withCredentials: true,
+});
+
+// ✅ avoid UTC shift
+const toLocalYMD = (dateLike) => {
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 export default {
-  name: 'StudentEnroll',
-  components: {
-    StudentLayout
-  },
+  name: "StudentEnroll",
+  components: { StudentLayout },
+
   data() {
     return {
-      searchQuery: '',
-      activeTab: 'requirements',
-      showTDCRequirements: false,
-      showPDCRequirements: false,
+      searchQuery: "",
+      activeTab: "requirements",
+
+      courses: [],
+      loadingCourses: false,
+
+      requirementsMap: {},
+      showReqMap: {},
+      loadingReqMap: {},
+
+      // calendar
       currentDate: new Date(),
       selectedDate: null,
+
+      // month schedule map: { "YYYY-MM-DD": {availableSlots, totalSlots, scheduleCount} }
+      scheduleMap: {},
+      loadingMonth: false,
+
+      // availability (time schedules list)
+      availableSchedules: [],
+      loadingAvailability: false,
+
       isSubmitting: false,
-      
-      // Reservation form
       reservationForm: {
-        course: '',
-        paymentMethod: '',
-        timeSlot: '',
-        notes: ''
+        course: "",          // course_id
+        schedule_id: "",     // picked from availability
+        paymentMethod: "",
+        notes: "",
       },
-      
-      // Days of week
-      daysOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    }
+
+      daysOfWeek: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    };
   },
+
   computed: {
-    // Get current month and year
+    filteredCourses() {
+      const q = (this.searchQuery || "").trim().toLowerCase();
+      if (!q) return this.courses;
+
+      return this.courses.filter((c) => {
+        return (
+          (c.course_name || "").toLowerCase().includes(q) ||
+          (c.course_code || "").toLowerCase().includes(q) ||
+          (c.description || "").toLowerCase().includes(q) ||
+          (c.duration || "").toLowerCase().includes(q)
+        );
+      });
+    },
+
     currentMonth() {
-      return this.currentDate.toLocaleString('default', { month: 'long' })
+      return this.currentDate.toLocaleString("default", { month: "long" });
     },
-    
+
     currentYear() {
-      return this.currentDate.getFullYear()
+      return this.currentDate.getFullYear();
     },
-    
-    // Generate calendar days with varied availability
+
     calendarDays() {
-      const year = this.currentDate.getFullYear()
-      const month = this.currentDate.getMonth()
-      
-      // First day of the month
-      const firstDay = new Date(year, month, 1)
-      // Last day of the month
-      const lastDay = new Date(year, month + 1, 0)
-      // Days in month
-      const daysInMonth = lastDay.getDate()
-      // Starting day (0 = Sunday, 1 = Monday, etc.)
-      const startDay = firstDay.getDay()
-      
-      const days = []
-      
-      // Add empty cells for days before the first day of the month
-      for (let i = 0; i < startDay; i++) {
-        const date = new Date(year, month, -i)
-        days.unshift({
-          date: date.toISOString().split('T')[0],
-          day: date.getDate(),
-          isCurrentMonth: false,
-          available: false,
-          slots: 0
-        })
-      }
-      
-      // Add days of the current month with varied availability
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day)
-        const dateString = date.toISOString().split('T')[0]
-        
-        // Generate random availability for demonstration
-        // In real app, this would come from API
-        const dayOfWeek = date.getDay()
-        let available = null
-        let slots = 0
-        
-        // Make some days available, some full, some not available
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-          // Weekends: 50% chance available, 30% full, 20% not available
-          const random = Math.random()
-          if (random < 0.5) {
-            available = true
-            slots = Math.floor(Math.random() * 4) + 1 // 1-4 slots
-          } else if (random < 0.8) {
-            available = false
-            slots = 0
-          } else {
-            available = null // Not available for booking
-          }
-        } else {
-          // Weekdays: 70% chance available, 20% full, 10% not available
-          const random = Math.random()
-          if (random < 0.7) {
-            available = true
-            slots = Math.floor(Math.random() * 6) + 2 // 2-7 slots
-          } else if (random < 0.9) {
-            available = false
-            slots = 0
-          } else {
-            available = null // Not available for booking
-          }
-        }
-        
+      const year = this.currentDate.getFullYear();
+      const month = this.currentDate.getMonth();
+
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startDay = firstDay.getDay();
+
+      const days = [];
+
+      // previous month fillers
+      for (let i = startDay - 1; i >= 0; i--) {
+        const d = new Date(year, month, -i);
+        const dateString = toLocalYMD(d);
         days.push({
+          key: `prev-${dateString}`,
           date: dateString,
-          day: day,
-          isCurrentMonth: true,
-          available: available,
-          slots: slots,
-          isSelected: this.selectedDate && this.selectedDate.date === dateString
-        })
-      }
-      
-      // Add empty cells for days after the last day of the month
-      const totalCells = 42 // 6 weeks * 7 days
-      const remainingCells = totalCells - days.length
-      
-      for (let i = 1; i <= remainingCells; i++) {
-        const date = new Date(year, month + 1, i)
-        days.push({
-          date: date.toISOString().split('T')[0],
-          day: date.getDate(),
+          day: d.getDate(),
           isCurrentMonth: false,
           available: false,
-          slots: 0
-        })
+          slots: 0,
+          isSelected: this.selectedDate?.date === dateString,
+        });
       }
-      
-      return days
+
+      // current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateString = toLocalYMD(d);
+
+        const info = this.scheduleMap[dateString];
+        const slots = info ? Number(info.availableSlots || 0) : 0;
+        const available = info ? slots > 0 : null;
+
+        days.push({
+          key: `cur-${dateString}`,
+          date: dateString,
+          day,
+          isCurrentMonth: true,
+          available,
+          slots,
+          isSelected: this.selectedDate?.date === dateString,
+        });
+      }
+
+      // next month fillers (to make 42 cells)
+      const totalCells = 42;
+      const remainingCells = totalCells - days.length;
+
+      for (let i = 1; i <= remainingCells; i++) {
+        const d = new Date(year, month + 1, i);
+        const dateString = toLocalYMD(d);
+        days.push({
+          key: `next-${dateString}`,
+          date: dateString,
+          day: d.getDate(),
+          isCurrentMonth: false,
+          available: false,
+          slots: 0,
+          isSelected: this.selectedDate?.date === dateString,
+        });
+      }
+
+      return days;
     },
-    
-    // Check if reservation can be submitted
+
     canSubmitReservation() {
       return (
         this.reservationForm.course &&
+        this.reservationForm.schedule_id &&
         this.reservationForm.paymentMethod &&
-        this.reservationForm.timeSlot &&
         this.selectedDate &&
-        this.selectedDate.available === true && // Must be explicitly true
+        this.selectedDate.available === true &&
         this.selectedDate.slots > 0 &&
         !this.isSubmitting
-      )
-    }
+      );
+    },
   },
+
   methods: {
-    // Enroll in course
-    enrollCourse(course) {
-      if (confirm(`Are you sure you want to enroll in ${course.toUpperCase()}?`)) {
-        console.log(`Enrolling in ${course}`)
-        // Here you would make API call to enroll
-        this.activeTab = 'reservation'
-      }
-    },
-    
-    // Calendar navigation
-    previousMonth() {
-      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1)
-      this.selectedDate = null
-    },
-    
-    nextMonth() {
-      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1)
-      this.selectedDate = null
-    },
-    
-    // Select date from calendar
-    selectDate(day) {
-      if (day.isCurrentMonth) {
-        this.selectedDate = day
-      }
-    },
-    
-    // Format selected date for display
-    formatSelectedDate(date) {
-      const d = new Date(date.date)
-      return d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    },
-    
-    // Submit reservation
-    async submitReservation() {
-      if (!this.canSubmitReservation) return
-      
-      this.isSubmitting = true
-      
+    async fetchCourses() {
+      this.loadingCourses = true;
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        
-        console.log('Reservation submitted:', {
-          ...this.reservationForm,
-          selectedDate: this.selectedDate
-        })
-        
-        // Show success message
-        alert('✅ Reservation successful! You will receive a confirmation email shortly.')
-        
-        // Reset form
-        this.reservationForm = {
-          course: '',
-          paymentMethod: '',
-          timeSlot: '',
-          notes: ''
-        }
-        this.selectedDate = null
-        
-      } catch (error) {
-        console.error('Reservation failed:', error)
-        alert('❌ Reservation failed. Please try again.')
+        const res = await api.get("/student/courses");
+        this.courses = Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (err) {
+        console.error("fetchCourses error:", err);
+        this.courses = [];
+        alert(err.response?.data?.message || "Failed to load courses");
       } finally {
-        this.isSubmitting = false
+        this.loadingCourses = false;
       }
-    }
+    },
+
+    async toggleRequirements(course) {
+      const courseId = course.id;
+      this.showReqMap[courseId] = !this.showReqMap[courseId];
+
+      if (this.showReqMap[courseId] && !this.requirementsMap[courseId]) {
+        this.loadingReqMap[courseId] = true;
+        try {
+          const res = await api.get(`/student/courses/${courseId}/requirements`);
+          this.requirementsMap[courseId] = Array.isArray(res.data?.data) ? res.data.data : [];
+        } catch (err) {
+          console.error("toggleRequirements error:", err);
+          this.requirementsMap[courseId] = [];
+          alert(err.response?.data?.message || "Failed to load requirements");
+        } finally {
+          this.loadingReqMap[courseId] = false;
+        }
+      }
+    },
+
+    enrollCourse(course) {
+      if (confirm(`Are you sure you want to enroll in ${course.course_name}?`)) {
+        this.reservationForm.course = String(course.id);
+        this.activeTab = "reservation";
+        this.fetchMonthSchedules(); // refresh calendar for selected course
+      }
+    },
+
+    // ===== calendar month data =====
+    async fetchMonthSchedules() {
+      const y = this.currentDate.getFullYear();
+      const m = String(this.currentDate.getMonth() + 1).padStart(2, "0");
+      const month = `${y}-${m}`;
+
+      this.loadingMonth = true;
+      try {
+        const params = { month };
+        if (this.reservationForm.course) params.course_id = Number(this.reservationForm.course);
+
+        const res = await api.get("/student/schedules", { params });
+        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+
+        const map = {};
+        for (const r of rows) map[r.date] = r;
+        this.scheduleMap = map;
+      } catch (err) {
+        console.error("fetchMonthSchedules error:", err);
+        this.scheduleMap = {};
+        alert(err.response?.data?.message || "Failed to load month schedules");
+      } finally {
+        this.loadingMonth = false;
+      }
+    },
+
+    async onCourseChange() {
+      // clear selected schedule/time list when course changes
+      this.reservationForm.schedule_id = "";
+      this.availableSchedules = [];
+      this.selectedDate = null; // ✅ avoid mismatch date from old course
+      await this.fetchMonthSchedules();
+    },
+
+    previousMonth() {
+      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+      this.selectedDate = null;
+      this.availableSchedules = [];
+      this.reservationForm.schedule_id = "";
+      this.fetchMonthSchedules();
+    },
+
+    nextMonth() {
+      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+      this.selectedDate = null;
+      this.availableSchedules = [];
+      this.reservationForm.schedule_id = "";
+      this.fetchMonthSchedules();
+    },
+
+    async selectDate(day) {
+      if (!day.isCurrentMonth) return;
+      if (!this.reservationForm.course) {
+        alert("Please select a course first.");
+        return;
+      }
+
+      this.selectedDate = day;
+      this.availableSchedules = [];
+      this.reservationForm.schedule_id = "";
+
+      await this.fetchAvailabilityForSelectedDate();
+    },
+
+    formatSelectedDate(dateObj) {
+      const d = new Date(dateObj.date + "T00:00:00");
+      return d.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    },
+
+    async fetchAvailabilityForSelectedDate() {
+      if (!this.selectedDate?.date) return;
+      if (!this.reservationForm.course) return;
+
+      this.loadingAvailability = true;
+      try {
+        const res = await api.get("/student/availability", {
+          params: {
+            date: this.selectedDate.date,
+            course_id: Number(this.reservationForm.course),
+          },
+        });
+        this.availableSchedules = Array.isArray(res.data?.data) ? res.data.data : [];
+      } catch (err) {
+        console.error("fetchAvailability error:", err);
+        this.availableSchedules = [];
+        alert(err.response?.data?.message || "Failed to load availability");
+      } finally {
+        this.loadingAvailability = false;
+      }
+    },
+
+    pickSchedule(s) {
+      this.reservationForm.schedule_id = String(s.schedule_id);
+    },
+
+    async submitReservation() {
+      if (!this.canSubmitReservation) return;
+
+      this.isSubmitting = true;
+      try {
+        const payload = {
+          schedule_id: Number(this.reservationForm.schedule_id),
+          payment_method: this.reservationForm.paymentMethod,
+          notes: this.reservationForm.notes || null,
+        };
+
+        await api.post("/student/reservations", payload);
+
+        alert("✅ Reservation successful!");
+
+        // reset
+        this.reservationForm.paymentMethod = "";
+        this.reservationForm.notes = "";
+        this.reservationForm.schedule_id = "";
+        this.availableSchedules = [];
+        this.selectedDate = null;
+
+        // refresh month after reserving (slots may change)
+        await this.fetchMonthSchedules();
+      } catch (err) {
+        console.error("Reservation failed:", err);
+        alert(err.response?.data?.message || "❌ Reservation failed. Please try again.");
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
   },
-  mounted() {
-    // Set today's date as default selected date if available
-    const today = new Date()
-    const todayString = today.toISOString().split('T')[0]
-    
-    // Find today in calendarDays
-    const todayInCalendar = this.calendarDays.find(day => day.date === todayString)
-    if (todayInCalendar && todayInCalendar.available === true && todayInCalendar.slots > 0) {
-      this.selectedDate = todayInCalendar
-    }
-  }
-}
+
+  async mounted() {
+    await this.fetchCourses();
+    await this.fetchMonthSchedules();
+  },
+};
 </script>
 
 <style scoped>
-/* Smooth transitions */
 .transition-colors {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-
 .transition-shadow {
   transition: box-shadow 0.3s ease;
 }
-
 .transition-all {
   transition: all 0.3s ease-in-out;
 }
-
 .transition-transform {
   transition: transform 0.3s ease;
 }
-
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
