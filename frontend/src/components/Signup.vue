@@ -11,12 +11,19 @@
         <img src="/facet-logo.png" alt="FACET Logo" class="w-16 h-16">
       </div>
 
-      <h2 class="text-center text-green-800 font-semibold text-sm mb-6">
-        Create Your FACET Account
+      <h2
+        class="text-center font-semibold text-sm mb-1"
+        :class="track === 'tesda' ? 'text-blue-800' : 'text-green-800'"
+      >
+        {{ signupTitle }}
       </h2>
 
+      <p class="text-center text-xs text-gray-500 mb-6">
+        {{ signupSubtitle }}
+      </p>
+
       <!-- General message -->
-      <div 
+      <div
         v-if="message.text"
         :class="[
           'text-center mb-4 p-2 rounded-md font-medium',
@@ -30,16 +37,14 @@
         <!-- Full Name -->
         <div>
           <label class="text-sm text-gray-700">Full Name: *</label>
-          <input 
-            type="text" 
-            v-model="formData.fullname" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="text"
+            v-model="formData.fullname"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.fullname" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.fullname" class="text-red-600 text-sm mt-1">
             {{ errors.fullname }}
           </p>
         </div>
@@ -47,16 +52,14 @@
         <!-- Username -->
         <div>
           <label class="text-sm text-gray-700">Username: *</label>
-          <input 
-            type="text" 
-            v-model="formData.username" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="text"
+            v-model="formData.username"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.username" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.username" class="text-red-600 text-sm mt-1">
             {{ errors.username }}
           </p>
         </div>
@@ -64,33 +67,29 @@
         <!-- Email -->
         <div>
           <label class="text-sm text-gray-700">Email: *</label>
-          <input 
-            type="email" 
-            v-model="formData.email" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="email"
+            v-model="formData.email"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.email" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.email" class="text-red-600 text-sm mt-1">
             {{ errors.email }}
           </p>
         </div>
 
-        <!-- Contact (Optional) -->
+        <!-- Contact -->
         <div>
           <label class="text-sm text-gray-700">Contact Number:</label>
-          <input 
-            type="text" 
-            v-model="formData.contact" 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="text"
+            v-model="formData.contact"
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
             placeholder="Optional"
           />
-          <p 
-            v-if="errors.contact" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.contact" class="text-red-600 text-sm mt-1">
             {{ errors.contact }}
           </p>
         </div>
@@ -98,16 +97,14 @@
         <!-- Password -->
         <div>
           <label class="text-sm text-gray-700">Password: *</label>
-          <input 
-            type="password" 
-            v-model="formData.password" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="password"
+            v-model="formData.password"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.password" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.password" class="text-red-600 text-sm mt-1">
             {{ errors.password }}
           </p>
         </div>
@@ -115,25 +112,24 @@
         <!-- Confirm Password -->
         <div>
           <label class="text-sm text-gray-700">Confirm Password: *</label>
-          <input 
-            type="password" 
-            v-model="formData.confirm" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="password"
+            v-model="formData.confirm"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.confirm" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.confirm" class="text-red-600 text-sm mt-1">
             {{ errors.confirm }}
           </p>
         </div>
 
         <!-- Submit Button -->
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           :disabled="isLoading"
-          class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full text-white py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+          :class="track === 'tesda' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'"
         >
           <span v-if="isLoading">Creating Account...</span>
           <span v-else>Create Account</span>
@@ -148,7 +144,7 @@
       </div>
 
       <!-- Google Button -->
-      <button 
+      <button
         @click="handleGoogleSignup"
         class="w-full bg-white border border-gray-300 rounded-md py-2 flex justify-center items-center space-x-2 hover:bg-gray-50 transition"
       >
@@ -158,8 +154,12 @@
 
       <!-- Footer -->
       <p class="text-center text-sm text-gray-600 mt-4">
-        Already have an account? 
+        Already have an account?
         <a href="#" @click.prevent="goToLogin" class="text-blue-600 hover:underline">Login here</a>
+      </p>
+
+      <p class="text-center text-xs text-gray-500 mt-2">
+        <a href="#" @click.prevent="goToLanding" class="hover:underline">← Back to enrollment options</a>
       </p>
     </div>
   </div>
@@ -168,9 +168,10 @@
 <script>
 export default {
   name: 'SignupPage',
-  
+
   data() {
     return {
+      track: 'driving',
       formData: {
         fullname: '',
         username: '',
@@ -188,19 +189,41 @@ export default {
     }
   },
 
+  computed: {
+    signupTitle() {
+      return this.track === 'tesda'
+        ? 'Create Your TESDA Account'
+        : 'Create Your Driving Course Account'
+    },
+    signupSubtitle() {
+      return this.track === 'tesda'
+        ? 'Register for TESDA training portal access'
+        : 'Register for driving course portal access'
+    }
+  },
+
   methods: {
+    readTrackFromQuery() {
+      const q = this.$route?.query?.track;
+      if (q === 'tesda' || q === 'driving') {
+        this.track = q;
+        localStorage.setItem('lastSelectedTrack', q);
+        return;
+      }
+      const last = localStorage.getItem('lastSelectedTrack');
+      if (last === 'tesda' || last === 'driving') {
+        this.track = last;
+      }
+    },
+
     validateForm() {
-      // Clear previous errors
       this.errors = {};
       let isValid = true;
 
-      // Trim values
       const fullname = this.formData.fullname.trim();
       const username = this.formData.username.trim();
       const email = this.formData.email.trim();
-      const contact = this.formData.contact.trim();
 
-      // Required fields validation (exact same as PHP)
       if (!fullname) {
         this.errors.fullname = 'Full name is required';
         isValid = false;
@@ -225,9 +248,11 @@ export default {
         isValid = false;
       }
 
-      // Password match validation
-      if (this.formData.password && this.formData.confirm && 
-          this.formData.password !== this.formData.confirm) {
+      if (
+        this.formData.password &&
+        this.formData.confirm &&
+        this.formData.password !== this.formData.confirm
+      ) {
         this.errors.confirm = 'Passwords do not match';
         isValid = false;
       }
@@ -240,80 +265,67 @@ export default {
       return re.test(email);
     },
 
+    goToLanding() {
+      this.$router.push('/');
+    },
+
     goToLogin() {
-      // Change the URL
-      window.history.pushState({}, '', '/');
-      // Force page reload to trigger App.vue check
-      window.location.reload();
+      this.$router.push(`/login?track=${this.track}`);
     },
 
     async handleSignup() {
-      // Clear previous messages and errors
       this.message.text = '';
       this.errors = {};
-      
-      // Validate form
-      if (!this.validateForm()) {
-        return;
-      }
+
+      if (!this.validateForm()) return;
 
       this.isLoading = true;
 
       try {
-        // Call backend API
+        const payload = {
+          fullname: this.formData.fullname.trim(),
+          username: this.formData.username.trim(),
+          email: this.formData.email.trim(),
+          contact: this.formData.contact.trim(),
+          password: this.formData.password,
+          confirm: this.formData.confirm,
+
+          // ✅ send track even if backend doesn't use it yet
+          track: this.track
+        };
+
         const response = await fetch('/api/auth/signup', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            fullname: this.formData.fullname.trim(),
-            username: this.formData.username.trim(),
-            email: this.formData.email.trim(),
-            contact: this.formData.contact.trim(),
-            password: this.formData.password,
-            confirm: this.formData.confirm
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
 
         if (data.status === 'success') {
+          localStorage.setItem('lastSelectedTrack', this.track);
+
           this.message = {
             text: data.message || 'Account created successfully!',
             type: 'success'
           };
-          
-          // Redirect to login after 2 seconds
+
           setTimeout(() => {
-            this.goToLogin();
-          }, 2000);
+            this.$router.push(`/login?track=${this.track}`);
+          }, 1000);
+
         } else if (data.status === 'error') {
-          // Set field-specific errors from backend
-          if (data.errors) {
-            this.errors = data.errors;
-          }
-          
-          // General error message
+          if (data.errors) this.errors = data.errors;
+
           if (data.errors?.general) {
-            this.message = {
-              text: data.errors.general,
-              type: 'error'
-            };
+            this.message = { text: data.errors.general, type: 'error' };
           } else {
-            // Fallback error message
-            this.message = {
-              text: 'Please check the form for errors',
-              type: 'error'
-            };
+            this.message = { text: 'Please check the form for errors', type: 'error' };
           }
         }
       } catch (error) {
-        this.message = {
-          text: 'An error occurred. Please try again.',
-          type: 'error'
-        };
         console.error('Signup error:', error);
+        this.message = { text: 'An error occurred. Please try again.', type: 'error' };
       } finally {
         this.isLoading = false;
       }
@@ -321,23 +333,34 @@ export default {
 
     handleGoogleSignup() {
       console.log('Google signup clicked');
-      // Implement Google OAuth here if needed
+    }
+  },
+
+  mounted() {
+    this.readTrackFromQuery();
+  },
+
+  watch: {
+    '$route.query.track'() {
+      this.readTrackFromQuery();
     }
   }
 }
 </script>
 
 <style scoped>
-/* Remove scroll and fix height */
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #app {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
 }
 </style>

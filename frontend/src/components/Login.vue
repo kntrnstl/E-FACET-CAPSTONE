@@ -9,19 +9,23 @@
     <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 rounded-xl shadow-lg w-[28rem]">
       <!-- Logo -->
       <div class="flex justify-center mb-4">
-        <img 
-          src="/facet-logo.png" 
-          alt="FACET Logo" 
-          class="w-16 h-16"
-        />
+        <img src="/facet-logo.png" alt="FACET Logo" class="w-16 h-16" />
       </div>
 
-      <h2 class="text-center text-green-800 font-semibold text-sm mb-6">
-        First Asian Cognizance Executive Training (FACET)
+      <!-- Track title -->
+      <h2
+        class="text-center font-semibold text-sm mb-1"
+        :class="track === 'tesda' ? 'text-blue-800' : 'text-green-800'"
+      >
+        {{ trackTitle }}
       </h2>
 
+      <p class="text-center text-xs text-gray-500 mb-6">
+        {{ trackSubtitle }}
+      </p>
+
       <!-- General Message -->
-      <div 
+      <div
         v-if="message.text"
         :class="[
           'text-center mb-4 p-2 rounded-md font-medium',
@@ -35,16 +39,14 @@
         <!-- Username/Email Field -->
         <div>
           <label class="text-sm text-gray-700">Username / Email:</label>
-          <input 
-            type="text" 
-            v-model="formData.username" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="text"
+            v-model="formData.username"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.username" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.username" class="text-red-600 text-sm mt-1">
             {{ errors.username }}
           </p>
         </div>
@@ -52,28 +54,27 @@
         <!-- Password Field -->
         <div>
           <label class="text-sm text-gray-700">Password:</label>
-          <input 
-            type="password" 
-            v-model="formData.password" 
-            required 
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+          <input
+            type="password"
+            v-model="formData.password"
+            required
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
+            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
           />
-          <p 
-            v-if="errors.password" 
-            class="text-red-600 text-sm mt-1"
-          >
+          <p v-if="errors.password" class="text-red-600 text-sm mt-1">
             {{ errors.password }}
           </p>
         </div>
 
         <!-- Submit Button -->
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           :disabled="isLoading"
-          class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full text-white py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+          :class="track === 'tesda' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'"
         >
           <span v-if="isLoading">Logging in...</span>
-          <span v-else>Login to your account</span>
+          <span v-else>Login</span>
         </button>
       </form>
 
@@ -85,22 +86,23 @@
       </div>
 
       <!-- Google Login Button -->
-      <button 
+      <button
         @click="handleGoogleLogin"
         class="w-full bg-white border border-gray-300 rounded-md py-2 flex justify-center items-center space-x-2 hover:bg-gray-50 transition"
       >
-        <img 
-          src="/google-icon.png" 
-          alt="Google" 
-          class="w-5 h-5"
-        />
+        <img src="/google-icon.png" alt="Google" class="w-5 h-5" />
         <span class="text-gray-700">Google</span>
       </button>
 
       <!-- Footer Link -->
       <p class="text-center text-sm text-gray-600 mt-4">
-        Don't have an account? 
+        Don't have an account?
         <a href="#" @click.prevent="goToSignup" class="text-blue-600 hover:underline">Create account</a>
+      </p>
+
+      <!-- Back to landing -->
+      <p class="text-center text-xs text-gray-500 mt-2">
+        <a href="#" @click.prevent="goToLanding" class="hover:underline">← Back to enrollment options</a>
       </p>
     </div>
   </div>
@@ -109,9 +111,10 @@
 <script>
 export default {
   name: 'LoginPage',
-  
+
   data() {
     return {
+      track: 'driving', // default
       formData: {
         username: '',
         password: ''
@@ -126,6 +129,19 @@ export default {
       },
       isLoading: false,
       isRedirecting: false
+    }
+  },
+
+  computed: {
+    trackTitle() {
+      return this.track === 'tesda'
+        ? 'TESDA Student Login'
+        : 'Driving Course Student Login'
+    },
+    trackSubtitle() {
+      return this.track === 'tesda'
+        ? 'Login to your TESDA training portal'
+        : 'Login to your driving course portal'
     }
   },
 
@@ -148,206 +164,174 @@ export default {
     },
 
     goToSignup() {
-      this.$router.push('/signup');
+      // keep track in URL
+      this.$router.push(`/signup?track=${this.track}`);
+    },
+
+    goToLanding() {
+      this.$router.push('/');
+    },
+
+    // ✅ redirect helper (now track-aware)
+    redirectByRole(role, track) {
+      if (role === 'admin') return '/admin-dashboard';
+      if (role === 'instructor') return '/instructor-dashboard';
+      if (role === 'student' || role === 'user') {
+        return track === 'tesda' ? '/tesda-dashboard' : '/student-dashboard';
+      }
+      return null;
     },
 
     async handleLogin() {
-      // Clear previous messages
       this.message.text = '';
       this.isRedirecting = false;
-      
-      // Validate form
-      if (!this.validateForm()) {
-        return;
-      }
+
+      if (!this.validateForm()) return;
 
       this.isLoading = true;
-      console.log('🔄 Login attempt started');
 
       try {
         const loginData = {
           username: this.formData.username.trim(),
-          password: this.formData.password
+          password: this.formData.password,
+          track: this.track 
         };
 
-        console.log('📤 Sending login request:', { 
-          username: loginData.username, 
-          hasPassword: !!loginData.password 
-        });
-
-        // Call backend API
         const response = await fetch('/api/auth/login', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(loginData),
           credentials: 'include'
         });
 
-        console.log('📥 Response status:', response.status);
-        
         const data = await response.json();
-        console.log('📥 Full response data:', data);
 
         if (data.status === 'success') {
-          console.log('✅ Login successful!');
-          console.log('👤 User data:', data.user);
-          
-          // Store user data in localStorage
-          if (data.user) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-            console.log('💾 User saved to localStorage');
-            
-            // Show success message with animation
-            this.message = {
-              text: data.message || 'Login successful! Redirecting...',
-              type: 'success'
-            };
-            
-            this.isRedirecting = true;
-            
-            // Wait 1.5 seconds to show the success message
-            setTimeout(() => {
-              // Determine where to redirect based on user role
-              let redirectPath = '/';
-              
-              if (data.user.role === 'admin') {
-                redirectPath = '/admin-dashboard';
-              } else if (data.user.role === 'student') {
-                redirectPath = '/student-dashboard';
-              } else if (data.user.role === 'user') {
-                redirectPath = '/student-dashboard'; // Treat 'user' as student
-              } else {
-                console.error('❌ Unknown role:', data.user.role);
-                this.message = {
-                  text: 'Unknown user role. Please contact administrator.',
-                  type: 'error'
-                };
-                this.isRedirecting = false;
-                return;
-              }
-              
-              console.log('🎯 Redirecting to:', redirectPath);
-              this.$router.push(redirectPath);
-              
-            }, 1500);
-          } else {
-            console.error('❌ No user data in response');
+          if (!data.user) {
             this.message = {
               text: 'Login error: No user data received from server',
               type: 'error'
             };
+            return;
           }
-          
+
+          // ✅ Merge track into user data (frontend-only workaround)
+          // If backend already returns track later, it will override this.
+          const finalUser = { ...data.user };
+
+          // only set track for student/user roles
+          if (finalUser.role === 'student' || finalUser.role === 'user') {
+            finalUser.track = finalUser.track || this.track || 'driving';
+          }
+
+          localStorage.setItem('user', JSON.stringify(finalUser));
+          localStorage.setItem('lastSelectedTrack', finalUser.track || this.track);
+
+          this.message = {
+            text: data.message || 'Login successful! Redirecting...',
+            type: 'success'
+          };
+
+          this.isRedirecting = true;
+
+          setTimeout(() => {
+            const role = finalUser?.role;
+            const redirectPath = this.redirectByRole(role, finalUser.track);
+
+            if (!redirectPath) {
+              this.message = {
+                text: 'Unknown user role. Please contact administrator.',
+                type: 'error'
+              };
+              this.isRedirecting = false;
+              return;
+            }
+
+            this.$router.push(redirectPath);
+          }, 800);
+
         } else {
-          console.log('❌ Login failed:', data.message);
-          
-          // Set field-specific errors
-          if (data.errors) {
-            this.errors = data.errors;
-          }
-          
+          if (data.errors) this.errors = data.errors;
+
           this.message = {
             text: data.message || 'Login failed. Please check your credentials.',
             type: 'error'
           };
         }
-        
+
       } catch (error) {
-        console.error('🔥 Network/Server error:', error);
-        
         this.message = {
           text: 'Network error. Please check your connection and try again.',
           type: 'error'
         };
+        console.error('Login error:', error);
       } finally {
         this.isLoading = false;
-        console.log('🏁 Login process completed');
       }
     },
 
     handleGoogleLogin() {
       console.log('Google login clicked');
-      // window.location.href = '/api/auth/google';
+    },
+
+    readTrackFromQuery() {
+      const q = this.$route?.query?.track;
+      if (q === 'tesda' || q === 'driving') {
+        this.track = q;
+        localStorage.setItem('lastSelectedTrack', q);
+        return;
+      }
+
+      // fallback: use last choice
+      const last = localStorage.getItem('lastSelectedTrack');
+      if (last === 'tesda' || last === 'driving') {
+        this.track = last;
+      }
     }
   },
 
   mounted() {
-    console.log('🔍 Checking if user is already logged in...');
-    
-    // Check if user is already logged in and redirect if needed
+    // detect track from url or saved selection
+    this.readTrackFromQuery();
+
+    // auto redirect if logged in
     const user = localStorage.getItem('user');
-    if (user) {
-      try {
-        const userData = JSON.parse(user);
-        console.log('👤 Found user in localStorage:', userData);
-        
-        // Auto-redirect if user is already logged in
-        if (userData.user_id && userData.role) {
-          let redirectPath = '/';
-          
-          if (userData.role === 'admin') {
-            redirectPath = '/admin-dashboard';
-          } else if (userData.role === 'student' || userData.role === 'user') {
-            redirectPath = '/student-dashboard';
-          }
-          
-          console.log('🔄 Auto-redirecting to:', redirectPath);
-          this.$router.push(redirectPath);
-        }
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        localStorage.removeItem('user'); // Clear corrupted data
+    if (!user) return;
+
+    try {
+      const userData = JSON.parse(user);
+      if (userData.user_id && userData.role) {
+        const redirectPath = this.redirectByRole(userData.role, userData.track);
+        if (redirectPath) this.$router.push(redirectPath);
+        else localStorage.removeItem('user');
       }
+    } catch (e) {
+      localStorage.removeItem('user');
+    }
+  },
+
+  watch: {
+    // If user changes /login?track=..., update UI live
+    '$route.query.track'() {
+      this.readTrackFromQuery();
     }
   }
 }
 </script>
 
 <style scoped>
-/* Remove scroll and fix height */
 html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   width: 100%;
-  overflow-y: auto; /* Allow vertical scrolling */
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #app {
   min-height: 100vh;
   width: 100%;
   position: relative;
-}
-
-/* Success message animation */
-@keyframes fadeInSuccess {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-    background-color: #d1fae5;
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    background-color: #d1fae5;
-  }
-}
-
-.bg-green-100 {
-  animation: fadeInSuccess 0.5s ease-out;
-}
-
-/* Redirecting animation */
-.redirecting-message {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
-  100% { opacity: 0.8; }
 }
 </style>

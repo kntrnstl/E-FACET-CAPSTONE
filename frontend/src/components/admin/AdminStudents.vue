@@ -30,12 +30,10 @@
             v-model="selectedCourse" 
             class="w-48 p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
           >
-            <option value="">All Courses</option>
-            <option value="Driving NC II">Driving NC II</option>
-            <option value="ATDC NC I">ATDC NC I</option>
-            <option value="Electrical Installation NC II">Electrical Installation NC II</option>
-            <option value="Cookery NC II">Cookery NC II</option>
-            <option value="Bread & Pastry">Bread & Pastry</option>
+<option value="">All Courses</option>
+<option v-for="c in courses" :key="c.id" :value="c.course_name">
+  {{ c.course_name }}
+</option>
           </select>
         </div>
 
@@ -281,192 +279,165 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, reactive } from 'vue'
-import AdminLayout from './AdminLayout.vue'
+import { ref, computed, onMounted, reactive } from "vue";
+import axios from "axios";
+import AdminLayout from "./AdminLayout.vue";
+
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+  withCredentials: true,
+});
 
 export default {
-  name: 'AdminStudents',
-  components: {
-    AdminLayout
-  },
+  name: "AdminStudents",
+  components: { AdminLayout },
+
   setup() {
     // State
-    const students = ref([])
-    const loading = ref(true)
-    const searchQuery = ref('')
-    const selectedCourse = ref('')
-    const selectedStatus = ref('')
-    const sortBy = ref('name')
-    const showModal = ref(false)
-    const showDeleteModal = ref(false)
-    const isEditing = ref(false)
-    const studentToDelete = ref(null)
-    
-    // Form data
+    const students = ref([]);
+    const loading = ref(true);
+
+    const searchQuery = ref("");
+    const selectedCourse = ref(""); // optional, but we focus Driving
+    const selectedStatus = ref("");
+    const sortBy = ref("name");
+
+    // (Optional UI modals) — keep them, but we’ll disable add/edit/delete for now
+    const showModal = ref(false);
+    const showDeleteModal = ref(false);
+    const isEditing = ref(false);
+    const studentToDelete = ref(null);
+
     const formData = reactive({
       id: null,
-      name: '',
-      email: '',
-      course: '',
-      status: 'active'
-    })
-    
-    // Computed properties
+      name: "",
+      email: "",
+      course: "",
+      status: "active",
+    });
+
+    // ✅ Fetch confirmed driving students from backend
+    const fetchStudents = async () => {
+      loading.value = true;
+      try {
+        // We focus driving; backend already filters by CONFIRMED + Driving
+        const res = await api.get("/admin/students/driving", {
+          params: {
+            q: searchQuery.value || "",
+            status: selectedStatus.value || "active",
+            // course param optional; you can force driving keyword
+            course: "Driving",
+          },
+        });
+
+        const list = res.data?.data || [];
+        students.value = list.map((x) => ({
+          id: x.id,
+          name: x.name || "—",
+          email: x.email || "—",
+          course: x.course || "—",
+          status: x.status || "active",
+          enrollmentDate: x.enrollmentDate || null,
+        }));
+      } catch (err) {
+        console.error("fetchStudents error:", err.response?.data || err);
+        students.value = [];
+      } finally {
+        loading.value = false;
+      }
+    };
+
     const filteredStudents = computed(() => {
-      let result = [...students.value]
-      
-      // Apply search
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        result = result.filter(student => 
-          student.name.toLowerCase().includes(query) ||
-          student.email.toLowerCase().includes(query) ||
-          student.course.toLowerCase().includes(query)
-        )
-      }
-      
-      // Apply course filter
+      // Since backend already filtered to CONFIRMED + driving,
+      // we only do local filtering for course dropdown if you still want it.
+      let result = [...students.value];
+
       if (selectedCourse.value) {
-        result = result.filter(student => student.course === selectedCourse.value)
+        result = result.filter((s) => s.course === selectedCourse.value);
       }
-      
-      // Apply status filter
-      if (selectedStatus.value) {
-        result = result.filter(student => student.status === selectedStatus.value)
-      }
-      
-      // Apply sorting
+
+      // Sorting
       result.sort((a, b) => {
-        switch(sortBy.value) {
-          case 'name':
-            return a.name.localeCompare(b.name)
-          case 'nameDesc':
-            return b.name.localeCompare(a.name)
-          case 'date':
-            return new Date(b.enrollmentDate) - new Date(a.enrollmentDate)
-          case 'status':
-            return a.status.localeCompare(b.status)
+        switch (sortBy.value) {
+          case "name":
+            return (a.name || "").localeCompare(b.name || "");
+          case "nameDesc":
+            return (b.name || "").localeCompare(a.name || "");
+          case "date":
+            return new Date(b.enrollmentDate || 0) - new Date(a.enrollmentDate || 0);
+          case "status":
+            return (a.status || "").localeCompare(b.status || "");
           default:
-            return 0
+            return 0;
         }
-      })
-      
-      return result
-    })
-    
-    // Methods
+      });
+
+      return result;
+    });
+
     const getInitials = (name) => {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-    }
-    
+      const str = String(name || "").trim();
+      if (!str || str === "—") return "NA";
+      return str
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    };
+
     const getStatusClass = (status) => {
-      switch(status) {
-        case 'active': return 'text-green-600 font-semibold'
-        case 'pending': return 'text-yellow-600 font-semibold'
-        case 'inactive': return 'text-red-600 font-semibold'
-        default: return 'text-gray-600'
+      switch (String(status || "").toLowerCase()) {
+        case "active":
+          return "text-green-600 font-semibold";
+        case "pending":
+          return "text-yellow-600 font-semibold";
+        case "inactive":
+          return "text-red-600 font-semibold";
+        default:
+          return "text-gray-600";
       }
-    }
-    
+    };
+
     const formatStatus = (status) => {
-      return status.charAt(0).toUpperCase() + status.slice(1)
-    }
-    
-    const clearFilters = () => {
-      searchQuery.value = ''
-      selectedCourse.value = ''
-      selectedStatus.value = ''
-    }
-    
-    const openAddModal = () => {
-      isEditing.value = false
-      resetForm()
-      showModal.value = true
-    }
-    
-    const editStudent = (student) => {
-      isEditing.value = true
-      Object.assign(formData, student)
-      showModal.value = true
-    }
-    
+      const s = String(status || "");
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+    };
+
+    const clearFilters = async () => {
+      searchQuery.value = "";
+      selectedCourse.value = "";
+      selectedStatus.value = "";
+      sortBy.value = "name";
+      await fetchStudents();
+    };
+
+    // ✅ actions (view ok, edit/delete optional)
     const viewStudent = (student) => {
-      alert(`View student: ${student.name}`)
-      // In real app, navigate to student detail page
-    }
-    
-    const closeModal = () => {
-      showModal.value = false
-      resetForm()
-    }
-    
-    const resetForm = () => {
-      formData.id = null
-      formData.name = ''
-      formData.email = ''
-      formData.course = ''
-      formData.status = 'active'
-    }
-    
-    const saveStudent = () => {
-      if (isEditing.value) {
-        // Update existing student
-        const index = students.value.findIndex(s => s.id === formData.id)
-        if (index !== -1) {
-          students.value[index] = { ...formData }
-        }
-      } else {
-        // Add new student
-        const newStudent = {
-          id: students.value.length + 1,
-          ...formData,
-          enrollmentDate: new Date().toISOString().split('T')[0]
-        }
-        students.value.unshift(newStudent)
-      }
-      
-      closeModal()
-    }
-    
-    const confirmDelete = (student) => {
-      studentToDelete.value = student
-      showDeleteModal.value = true
-    }
-    
-    const cancelDelete = () => {
-      studentToDelete.value = null
-      showDeleteModal.value = false
-    }
-    
-    const deleteStudent = () => {
-      if (studentToDelete.value) {
-        students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
-      }
-      cancelDelete()
-    }
-    
-    // Fetch initial data
-    const fetchStudents = () => {
-      // Simulate API call
-      setTimeout(() => {
-        students.value = [
-          { id: 1, name: 'John Doe', email: 'john@example.com', course: 'Driving NC II', status: 'active', enrollmentDate: '2025-11-01' },
-          { id: 2, name: 'Jane Smith', email: 'jane@example.com', course: 'ATDC NC I', status: 'pending', enrollmentDate: '2025-10-29' },
-          { id: 3, name: 'Michael Reyes', email: 'michael@example.com', course: 'Driving NC II', status: 'active', enrollmentDate: '2025-10-27' },
-          { id: 4, name: 'Sarah Johnson', email: 'sarah@example.com', course: 'Cookery NC II', status: 'pending', enrollmentDate: '2025-10-25' },
-          { id: 5, name: 'Robert Chen', email: 'robert@example.com', course: 'Bread & Pastry', status: 'inactive', enrollmentDate: '2025-10-23' },
-          { id: 6, name: 'Lisa Wang', email: 'lisa@example.com', course: 'Driving NC II', status: 'active', enrollmentDate: '2025-10-20' }
-        ]
-        loading.value = false
-      }, 500)
-    }
-    
-    onMounted(() => {
-      fetchStudents()
-    })
-    
+      alert(
+        `Student: ${student.name}\n` +
+          `Email: ${student.email}\n` +
+          `Course: ${student.course}\n` +
+          `Status: ${student.status}\n` +
+          `Confirmed Since: ${student.enrollmentDate || "—"}`
+      );
+    };
+
+    // For now: disable add/edit/delete dahil ang source of truth mo is users + confirmed reservation
+    const openAddModal = () => {
+      alert("Students here are auto-from CONFIRMED reservations. Add student via signup + reservation.");
+    };
+    const editStudent = () => {
+      alert("Edit is disabled for now (source is users table). We can add edit later.");
+    };
+    const confirmDelete = () => {
+      alert("Delete is disabled for now. If you want, we can implement soft-delete in users.");
+    };
+    const closeModal = () => (showModal.value = false);
+
+    onMounted(fetchStudents);
+
     return {
-      // State
       students,
       loading,
       searchQuery,
@@ -478,24 +449,21 @@ export default {
       isEditing,
       studentToDelete,
       formData,
-      
-      // Computed
       filteredStudents,
-      
-      // Methods
+
       getInitials,
       getStatusClass,
       formatStatus,
       clearFilters,
+
       openAddModal,
       editStudent,
       viewStudent,
-      closeModal,
-      saveStudent,
       confirmDelete,
-      cancelDelete,
-      deleteStudent
-    }
-  }
-}
+      closeModal,
+
+      fetchStudents, // optional: add refresh button if you want
+    };
+  },
+};
 </script>

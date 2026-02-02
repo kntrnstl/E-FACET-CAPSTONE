@@ -31,11 +31,9 @@
             class="w-48 p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
           >
             <option value="">All Durations</option>
-            <option value="2 Months">2 Months</option>
-            <option value="4 Months">4 Months</option>
-            <option value="6 Months">6 Months</option>
-            <option value="1 Year">1 Year</option>
-            <option value="2 Years">2 Years</option>
+            <option value="8 hours">8 hours</option>
+            <option value="15 hours">15 hours</option>
+            <option value="4 hours for 2 days">4 hours for 2 days</option>
           </select>
         </div>
 
@@ -190,11 +188,9 @@
                   class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
                 >
                   <option value="" disabled>Select duration</option>
-                  <option value="2 Months">2 Months</option>
-                  <option value="4 Months">4 Months</option>
-                  <option value="6 Months">6 Months</option>
-                  <option value="1 Year">1 Year</option>
-                  <option value="2 Years">2 Years</option>
+                  <option value="8 hours">8 hours</option>
+                  <option value="15 hours">15 hours</option>
+                  <option value="4 hours for 2 days">4 hours for 2 days</option>
                 </select>
               </div>
 

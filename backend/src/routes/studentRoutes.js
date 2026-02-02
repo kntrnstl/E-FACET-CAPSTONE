@@ -12,6 +12,8 @@ const enrollmentAppController = require("../controllers/enrollmentApplicationCon
 const studentScheduleController = require("../controllers/studentScheduleController");
 const studentReservationController = require("../controllers/studentReservationController");
 
+const studentMyScheduleController = require("../controllers/studentMyScheduleController");
+
 // ================= MIDDLEWARE =================
 router.use(requireAuth);
 
@@ -195,6 +197,15 @@ router.get("/availability", (req, res) => {
   if (!requireUserRole(req, res)) return;
   return studentReservationController.getAvailability(req, res);
 });
+
+
+
+router.get("/my-schedule", (req, res) => {
+  if (!requireUserRole(req, res)) return;
+  return studentMyScheduleController.getMySchedule(req, res);
+});
+
+router.get("/my-schedule", studentMyScheduleController.getMySchedule);
 
 // ================= RESERVATIONS =================
 router.post("/reservations", (req, res) => {

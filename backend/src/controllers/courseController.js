@@ -341,3 +341,21 @@ exports.listCoursesStudent = async (req, res) => {
       .json({ status: "error", message: "Failed to fetch courses" });
   }
 };
+
+
+// GET /api/admin/courses/simple
+exports.listAllCoursesSimple = async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT id, course_name
+      FROM courses
+      WHERE status = 'active'
+      ORDER BY course_name ASC
+    `);
+
+    res.json({ status: "success", data: rows });
+  } catch (err) {
+    console.error("listAllCoursesSimple error:", err);
+    res.status(500).json({ status: "error", message: "Failed to fetch courses" });
+  }
+};

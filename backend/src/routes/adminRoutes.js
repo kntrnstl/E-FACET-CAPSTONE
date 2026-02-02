@@ -14,6 +14,8 @@ const instructorController = require("../controllers/instructorController");
 
 const { requireAuth, requireAdmin } = require("../middlewares/authMiddleware");
 
+const adminStudentsController = require("../controllers/adminStudentsController");
+
 function mustBeFn(label, fn) {
   if (typeof fn !== "function") {
     console.log("❌ NOT A FUNCTION:", label, "=>", fn);
@@ -110,6 +112,11 @@ mustBeFn(
   instructorController.deleteInstructor,
 );
 
+mustBeFn(
+  "adminStudentsController.listDrivingStudentsConfirmed",
+  adminStudentsController.listDrivingStudentsConfirmed,
+);
+
 // ================= MIDDLEWARE =================
 router.use(requireAuth);
 router.use(requireAdmin);
@@ -192,5 +199,17 @@ router.post(
 // ================= PAYMENTS =================
 router.get("/payments", paymentController.listPayments);
 router.put("/payments/:paymentId", paymentController.updatePayment);
+
+
+// ================= students =================
+router.get(
+  "/students/driving",
+  requireAuth,
+  requireAdmin,
+  adminStudentsController.listDrivingStudentsConfirmed,
+);
+
+
+
 
 module.exports = router;

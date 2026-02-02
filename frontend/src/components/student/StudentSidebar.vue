@@ -26,28 +26,13 @@
         </router-link>
         
         <router-link 
-          to="/student-course" 
-          :class="['flex items-center px-5 py-2 rounded-r-full', 
-                  $route.name === 'StudentCourse' ? 'bg-green-100 text-green-700 font-medium' : 'hover:bg-gray-200']"
-        >
-          <span class="ml-2">📚 My Course</span>
-        </router-link>
-        
-        <router-link 
           to="/student-schedule" 
           :class="['flex items-center px-5 py-2 rounded-r-full', 
                   $route.name === 'StudentSchedule' ? 'bg-green-100 text-green-700 font-medium' : 'hover:bg-gray-200']"
         >
           <span class="ml-2">🗓️ Schedule</span>
         </router-link>
-        
-        <router-link 
-          to="/student-attendance" 
-          :class="['flex items-center px-5 py-2 rounded-r-full', 
-                  $route.name === 'StudentAttendance' ? 'bg-green-100 text-green-700 font-medium' : 'hover:bg-gray-200']"
-        >
-          <span class="ml-2">✅ Attendance</span>
-        </router-link>
+      
         
         <router-link 
           to="/student-quiz" 
