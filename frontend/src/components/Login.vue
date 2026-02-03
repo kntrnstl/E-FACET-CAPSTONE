@@ -35,13 +35,16 @@
         {{ message.text }}
       </div>
 
-      <form @submit.prevent="handleLogin" class="space-y-4">
+      <form @submit.prevent="handleLogin" class="space-y-4" id="loginForm" name="loginForm">
         <!-- Username/Email Field -->
         <div>
-          <label class="text-sm text-gray-700">Username / Email:</label>
+          <label class="text-sm text-gray-700" for="username">Username / Email:</label>
           <input
+            id="username"
+            name="username"
             type="text"
             v-model="formData.username"
+            autocomplete="username"
             required
             class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
             :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
@@ -53,10 +56,13 @@
 
         <!-- Password Field -->
         <div>
-          <label class="text-sm text-gray-700">Password:</label>
+          <label class="text-sm text-gray-700" for="password">Password:</label>
           <input
+            id="password"
+            name="password"
             type="password"
             v-model="formData.password"
+            autocomplete="current-password"
             required
             class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
             :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
@@ -110,213 +116,159 @@
 
 <script>
 export default {
-  name: 'LoginPage',
+  name: "LoginPage",
 
   data() {
     return {
-      track: 'driving', // default
+      track: "driving",
       formData: {
-        username: '',
-        password: ''
+        username: "",
+        password: "",
       },
       errors: {
-        username: '',
-        password: ''
+        username: "",
+        password: "",
       },
       message: {
-        text: '',
-        type: ''
+        text: "",
+        type: "",
       },
       isLoading: false,
-      isRedirecting: false
-    }
+    };
   },
 
   computed: {
     trackTitle() {
-      return this.track === 'tesda'
-        ? 'TESDA Student Login'
-        : 'Driving Course Student Login'
+      return this.track === "tesda"
+        ? "TESDA Student Login"
+        : "Driving Course Login";
     },
     trackSubtitle() {
-      return this.track === 'tesda'
-        ? 'Login to your TESDA training portal'
-        : 'Login to your driving course portal'
-    }
+      return this.track === "tesda"
+        ? "Login to your TESDA training portal"
+        : "Login to your driving course portal";
+    },
   },
 
   methods: {
     validateForm() {
-      this.errors = { username: '', password: '' };
-      let isValid = true;
+      this.errors = { username: "", password: "" };
+      let ok = true;
 
       if (!this.formData.username.trim()) {
-        this.errors.username = 'Username/email is required';
-        isValid = false;
+        this.errors.username = "Username/email is required";
+        ok = false;
       }
-
       if (!this.formData.password) {
-        this.errors.password = 'Password is required';
-        isValid = false;
+        this.errors.password = "Password is required";
+        ok = false;
       }
-
-      return isValid;
+      return ok;
     },
 
     goToSignup() {
-      // keep track in URL
       this.$router.push(`/signup?track=${this.track}`);
     },
 
     goToLanding() {
-      this.$router.push('/');
+      this.$router.push("/");
     },
 
-    // ✅ redirect helper (now track-aware)
-    redirectByRole(role, track) {
-      if (role === 'admin') return '/admin-dashboard';
-      if (role === 'instructor') return '/instructor-dashboard';
-      if (role === 'student' || role === 'user') {
-        return track === 'tesda' ? '/tesda-dashboard' : '/student-dashboard';
+    readTrackFromQuery() {
+      const q = this.$route?.query?.track;
+      if (q === "tesda" || q === "driving") {
+        this.track = q;
+        localStorage.setItem("lastSelectedTrack", q);
+        return;
       }
-      return null;
+
+      const last = localStorage.getItem("lastSelectedTrack");
+      if (last === "tesda" || last === "driving") {
+        this.track = last;
+      }
     },
 
     async handleLogin() {
-      this.message.text = '';
-      this.isRedirecting = false;
-
+      this.message = { text: "", type: "" };
       if (!this.validateForm()) return;
 
       this.isLoading = true;
 
       try {
-        const loginData = {
+        const payload = {
           username: this.formData.username.trim(),
           password: this.formData.password,
-          track: this.track 
+          track: this.track, // ok kahit admin/instructor; backend ignores
         };
 
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(loginData),
-          credentials: 'include'
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
-        if (data.status === 'success') {
-          if (!data.user) {
-            this.message = {
-              text: 'Login error: No user data received from server',
-              type: 'error'
-            };
-            return;
-          }
-
-          // ✅ Merge track into user data (frontend-only workaround)
-          // If backend already returns track later, it will override this.
-          const finalUser = { ...data.user };
-
-          // only set track for student/user roles
-          if (finalUser.role === 'student' || finalUser.role === 'user') {
-            finalUser.track = finalUser.track || this.track || 'driving';
-          }
-
-          localStorage.setItem('user', JSON.stringify(finalUser));
-          localStorage.setItem('lastSelectedTrack', finalUser.track || this.track);
-
+        if (data.status !== "success") {
+          if (data.errors) this.errors = { ...this.errors, ...data.errors };
           this.message = {
-            text: data.message || 'Login successful! Redirecting...',
-            type: 'success'
+            text: data.message || "Login failed. Please check your credentials.",
+            type: "error",
           };
-
-          this.isRedirecting = true;
-
-          setTimeout(() => {
-            const role = finalUser?.role;
-            const redirectPath = this.redirectByRole(role, finalUser.track);
-
-            if (!redirectPath) {
-              this.message = {
-                text: 'Unknown user role. Please contact administrator.',
-                type: 'error'
-              };
-              this.isRedirecting = false;
-              return;
-            }
-
-            this.$router.push(redirectPath);
-          }, 800);
-
-        } else {
-          if (data.errors) this.errors = data.errors;
-
-          this.message = {
-            text: data.message || 'Login failed. Please check your credentials.',
-            type: 'error'
-          };
+          return;
         }
 
-      } catch (error) {
+        // ✅ store user (make sure track exists for students/users only)
+        const finalUser = { ...(data.user || {}) };
+        if (finalUser.role === "student" || finalUser.role === "user") {
+          finalUser.track = finalUser.track || this.track || "driving";
+          localStorage.setItem("lastSelectedTrack", finalUser.track);
+        }
+
+        localStorage.setItem("user", JSON.stringify(finalUser));
+
         this.message = {
-          text: 'Network error. Please check your connection and try again.',
-          type: 'error'
+          text: data.message || "Login successful! Redirecting...",
+          type: "success",
         };
-        console.error('Login error:', error);
+
+        // ✅ IMPORTANT: use backend redirect (single source of truth)
+        if (data.redirect) {
+          this.$router.push(data.redirect);
+        } else {
+          // fallback just in case
+          this.$router.push("/login");
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        this.message = {
+          text: "Network error. Please check your connection and try again.",
+          type: "error",
+        };
       } finally {
         this.isLoading = false;
       }
     },
 
     handleGoogleLogin() {
-      console.log('Google login clicked');
+      console.log("Google login clicked");
     },
-
-    readTrackFromQuery() {
-      const q = this.$route?.query?.track;
-      if (q === 'tesda' || q === 'driving') {
-        this.track = q;
-        localStorage.setItem('lastSelectedTrack', q);
-        return;
-      }
-
-      // fallback: use last choice
-      const last = localStorage.getItem('lastSelectedTrack');
-      if (last === 'tesda' || last === 'driving') {
-        this.track = last;
-      }
-    }
   },
 
   mounted() {
-    // detect track from url or saved selection
     this.readTrackFromQuery();
 
-    // auto redirect if logged in
-    const user = localStorage.getItem('user');
-    if (!user) return;
-
-    try {
-      const userData = JSON.parse(user);
-      if (userData.user_id && userData.role) {
-        const redirectPath = this.redirectByRole(userData.role, userData.track);
-        if (redirectPath) this.$router.push(redirectPath);
-        else localStorage.removeItem('user');
-      }
-    } catch (e) {
-      localStorage.removeItem('user');
-    }
+    // OPTIONAL: don't auto-redirect based on stale localStorage
+    // If you want auto-redirect, better to call /api/auth/check and decide from server.
   },
 
   watch: {
-    // If user changes /login?track=..., update UI live
-    '$route.query.track'() {
+    "$route.query.track"() {
       this.readTrackFromQuery();
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>

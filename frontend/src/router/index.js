@@ -1,4 +1,4 @@
-// router/index.js
+// src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
 
 // ================================
@@ -19,7 +19,6 @@ import AdminDashboard from "../components/admin/AdminDashboard.vue";
 import AdminStudents from "../components/admin/AdminStudents.vue";
 import AdminCertificates from "../components/admin/AdminCertificates.vue";
 
-// Admin components (lazy loaded)
 const AdminCourses = () => import("../components/admin/AdminCourses.vue");
 const AdminInstructors = () =>
   import("../components/admin/AdminInstructors.vue");
@@ -39,7 +38,6 @@ const AdminReservations = () =>
 import StudentDashboard from "../components/student/StudentDashboard.vue";
 import StudentAttendance from "../components/student/StudentAttendance.vue";
 
-// Student routes configuration (Driving)
 const studentRoutes = [
   {
     path: "/student-dashboard",
@@ -152,6 +150,69 @@ const tesdaRoutes = [
 ];
 
 // ================================
+// ✅ INSTRUCTOR (ADDED ONLY)
+// ================================
+const InstructorDashboard = () =>
+  import("../components/instructor/InstructorDashboard.vue");
+const InstructorClasses = () =>
+  import("../components/instructor/InstructorClasses.vue");
+const InstructorStudents = () =>
+  import("../components/instructor/InstructorStudents.vue");
+const InstructorSchedule = () =>
+  import("../components/instructor/InstructorSchedule.vue");
+const InstructorCertificates = () =>
+  import("../components/instructor/InstructorCertificates.vue");
+const InstructorMessages = () =>
+  import("../components/instructor/InstructorMessages.vue");
+const InstructorSettings = () =>
+  import("../components/instructor/InstructorSettings.vue");
+
+const instructorRoutes = [
+  {
+    path: "/instructor-dashboard",
+    name: "InstructorDashboard",
+    component: InstructorDashboard,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-classes",
+    name: "InstructorClasses",
+    component: InstructorClasses,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-students",
+    name: "InstructorStudents",
+    component: InstructorStudents,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-schedule",
+    name: "InstructorSchedule",
+    component: InstructorSchedule,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-certificates",
+    name: "InstructorCertificates",
+    component: InstructorCertificates,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-messages",
+    name: "InstructorMessages",
+    component: InstructorMessages,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+  {
+    path: "/instructor-settings",
+    name: "InstructorSettings",
+    component: InstructorSettings,
+    meta: { requiresAuth: true, requiresInstructor: true },
+  },
+];
+
+// ================================
 // ROUTES
 // ================================
 const routes = [
@@ -162,7 +223,7 @@ const routes = [
   { path: "/login", name: "Login", component: Login },
   { path: "/signup", name: "Signup", component: Signup },
 
-  // Admin routes
+  // Admin routes (UNCHANGED)
   {
     path: "/admin-dashboard",
     name: "AdminDashboard",
@@ -236,6 +297,9 @@ const routes = [
   // Student (TESDA)
   ...tesdaRoutes,
 
+  // ✅ Instructor (ADDED ONLY)
+  ...instructorRoutes,
+
   // Catch-all
   { path: "/:pathMatch(.*)*", redirect: "/" },
 ];
@@ -252,27 +316,27 @@ router.beforeEach((to, from, next) => {
   const userJson = localStorage.getItem("user");
   const user = userJson ? JSON.parse(userJson) : {};
 
-  // ✅ Public routes
+  // ✅ Public routes (UNCHANGED)
   if (to.path === "/" || to.path === "/login" || to.path === "/signup") {
     return next();
   }
 
-  // Only protect routes that require auth
+  // Only protect routes that require auth (UNCHANGED)
   if (to.meta.requiresAuth) {
     if (!user.user_id) return next("/login");
 
-    // helper: where students should go
+    // helper: where students should go (UNCHANGED)
     const studentHome =
       user.track === "tesda" ? "/tesda-dashboard" : "/student-dashboard";
 
-    // ✅ Admin guard
+    // ✅ Admin guard (UNCHANGED)
     if (to.meta.requiresAdmin && user.role !== "admin") {
       if (user.role === "student" || user.role === "user")
         return next(studentHome);
       return next("/login");
     }
 
-    // ✅ Student guard (accept 'student' and 'user')
+    // ✅ Student guard (UNCHANGED)
     if (
       to.meta.requiresStudent &&
       user.role !== "student" &&
@@ -282,7 +346,7 @@ router.beforeEach((to, from, next) => {
       return next("/login");
     }
 
-    // ✅ Prevent wrong portal for students/users
+    // ✅ Prevent wrong portal for students/users (UNCHANGED)
     if (user.role === "student" || user.role === "user") {
       const isTesdaRoute = to.path.startsWith("/tesda-");
       const isDrivingRoute = to.path.startsWith("/student-");
@@ -291,6 +355,17 @@ router.beforeEach((to, from, next) => {
         return next("/tesda-dashboard");
       if (user.track === "driving" && isTesdaRoute)
         return next("/student-dashboard");
+    }
+
+    // ✅ INSTRUCTOR GUARD (ADDED ONLY — does NOT change admin/student behavior)
+    if (to.meta.requiresInstructor) {
+      if (user.role !== "instructor") {
+        // keep existing roles behavior untouched
+        if (user.role === "admin") return next("/admin-dashboard");
+        if (user.role === "student" || user.role === "user")
+          return next(studentHome);
+        return next("/login");
+      }
     }
 
     return next();

@@ -20,6 +20,5 @@ html, body, #app {
   padding: 0 !important;
   height: 100vh !important;
   width: 100vw !important;
-  overflow: hidden !important;
 }
 </style>
