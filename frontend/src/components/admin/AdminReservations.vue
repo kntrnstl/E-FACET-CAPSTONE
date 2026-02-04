@@ -93,14 +93,14 @@
 
               <td class="py-3 px-4">
                 <div class="text-xs text-gray-700">
-                  {{ r.schedule_date }}<br />
+                  {{ formatManilaDate(r.schedule_date) }}<br />
                   {{ r.startTime }} - {{ r.endTime }}
                 </div>
               </td>
 
               <td class="py-3 px-4">
                 <span :class="getStatusClass(r.reservation_status)">
-                  {{ r.reservation_status }}
+                  {{ String(r.reservation_status || "").toUpperCase() }}
                 </span>
               </td>
 
@@ -130,17 +130,27 @@
       </div>
 
       <!-- Update Status Modal -->
-      <div v-if="showStatusModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div
+        v-if="showStatusModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      >
         <div class="bg-white rounded-lg w-full max-w-md p-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold text-green-800">Update Reservation Status</h3>
-            <button @click="closeStatusModal" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            <button @click="closeStatusModal" class="text-gray-400 hover:text-gray-600 text-xl">
+              ✕
+            </button>
           </div>
 
           <div class="text-sm text-gray-700 mb-3">
             <div><b>Reservation:</b> {{ selectedReservation?.reservation_id }}</div>
             <div><b>Student:</b> {{ selectedReservation?.student_name }}</div>
             <div><b>Course:</b> {{ selectedReservation?.course_name }}</div>
+            <div>
+              <b>Schedule:</b>
+              {{ selectedReservation ? formatManilaDate(selectedReservation.schedule_date) : "" }}
+              {{ selectedReservation?.startTime }}-{{ selectedReservation?.endTime }}
+            </div>
           </div>
 
           <select
@@ -194,6 +204,14 @@ export default {
     const newStatus = ref("PENDING");
     const saving = ref(false);
 
+    // ✅ Convert UTC ISO (with Z) to Manila local date (YYYY-MM-DD)
+    const formatManilaDate = (value) => {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+    };
+
     const courseOptions = computed(() => {
       const set = new Set(reservations.value.map((r) => r.course_name).filter(Boolean));
       return Array.from(set).sort();
@@ -204,11 +222,12 @@ export default {
 
       if (searchQuery.value) {
         const q = searchQuery.value.toLowerCase();
-        result = result.filter((r) =>
-          String(r.student_name || "").toLowerCase().includes(q) ||
-          String(r.email || "").toLowerCase().includes(q) ||
-          String(r.course_name || "").toLowerCase().includes(q) ||
-          String(r.reservation_id || "").toLowerCase().includes(q)
+        result = result.filter(
+          (r) =>
+            String(r.student_name || "").toLowerCase().includes(q) ||
+            String(r.email || "").toLowerCase().includes(q) ||
+            String(r.course_name || "").toLowerCase().includes(q) ||
+            String(r.reservation_id || "").toLowerCase().includes(q),
         );
       }
 
@@ -217,7 +236,9 @@ export default {
       }
 
       if (selectedStatus.value) {
-        result = result.filter((r) => String(r.reservation_status).toUpperCase() === selectedStatus.value);
+        result = result.filter(
+          (r) => String(r.reservation_status || "").toUpperCase() === selectedStatus.value,
+        );
       }
 
       return result;
@@ -254,7 +275,9 @@ export default {
 
     const viewReservation = (r) => {
       alert(
-        `Reservation: ${r.reservation_id}\nStudent: ${r.student_name}\nCourse: ${r.course_name}\nSchedule: ${r.schedule_date} ${r.startTime}-${r.endTime}\nStatus: ${r.reservation_status}`
+        `Reservation: ${r.reservation_id}\nStudent: ${r.student_name}\nCourse: ${r.course_name}\nSchedule: ${formatManilaDate(
+          r.schedule_date,
+        )} ${r.startTime}-${r.endTime}\nStatus: ${String(r.reservation_status || "").toUpperCase()}`,
       );
     };
 
@@ -276,12 +299,12 @@ export default {
         await axios.put(
           `http://localhost:3000/api/admin/reservations/${selectedReservation.value.reservation_id}`,
           { status: newStatus.value },
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         // update local list
         const idx = reservations.value.findIndex(
-          (x) => x.reservation_id === selectedReservation.value.reservation_id
+          (x) => x.reservation_id === selectedReservation.value.reservation_id,
         );
         if (idx !== -1) {
           reservations.value[idx] = {
@@ -321,6 +344,7 @@ export default {
       newStatus,
       saveStatus,
       saving,
+      formatManilaDate,
     };
   },
 };

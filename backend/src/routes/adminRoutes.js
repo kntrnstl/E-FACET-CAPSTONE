@@ -16,6 +16,9 @@ const { requireAuth, requireAdmin } = require("../middlewares/authMiddleware");
 
 const adminStudentsController = require("../controllers/adminStudentsController");
 
+const adminQrphVerifyController = require("../controllers/adminQrphVerifyController");
+
+
 function mustBeFn(label, fn) {
   if (typeof fn !== "function") {
     console.log("❌ NOT A FUNCTION:", label, "=>", fn);
@@ -210,6 +213,20 @@ router.get(
 );
 
 
+
+//PAYMENT ROUTES
+
+router.get("/payments", paymentController.listPayments);
+
+router.get("/payments/qrph", adminQrphVerifyController.listQrphPayments);
+router.post(
+  "/payments/qrph/:paymentRef/confirm",
+  adminQrphVerifyController.confirmQrphPayment,
+);
+router.post(
+  "/payments/qrph/:paymentRef/reject",
+  adminQrphVerifyController.rejectQrphPayment,
+);
 
 
 module.exports = router;

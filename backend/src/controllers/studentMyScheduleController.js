@@ -17,7 +17,7 @@ exports.getMySchedule = async (req, res) => {
         sr.schedule_id,
         sr.course_id,
         sr.student_id,
-        UPPER(sr.reservation_status) AS status,
+        sr.reservation_status AS status,
         sr.payment_method,
         sr.created_at,
         sr.updated_at,

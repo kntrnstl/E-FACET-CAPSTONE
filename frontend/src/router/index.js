@@ -38,6 +38,9 @@ const AdminReservations = () =>
 import StudentDashboard from "../components/student/StudentDashboard.vue";
 import StudentAttendance from "../components/student/StudentAttendance.vue";
 
+import StudentPaymentSuccess from "../components/student/StudentPaymentSuccess.vue";
+
+
 const studentRoutes = [
   {
     path: "/student-dashboard",
@@ -289,7 +292,14 @@ const routes = [
     name: "AdminSettings",
     component: AdminSettings,
     meta: { requiresAuth: true, requiresAdmin: true },
+
   },
+{
+  path: "/student/payment-success",
+  name: "StudentPaymentSuccess",
+  component: StudentPaymentSuccess,
+},
+
 
   // Student (Driving)
   ...studentRoutes,

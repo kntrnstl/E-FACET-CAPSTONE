@@ -1,34 +1,47 @@
-// src/routes/studentRoutes.js
+// backend/src/routes/studentRoutes.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 
 const { requireAuth } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadDocs");
 
-const studentDocumentsController = require("../controllers/studentDocumentsController");
+// multer upload middleware for REQUIREMENTS
+const uploadRequirements = require("../middlewares/uploadRequirements");
+
+// controllers
+const studentRequirementsController = require("../controllers/studentRequirementsController");
 const enrollmentAppController = require("../controllers/enrollmentApplicationController");
-
 const studentScheduleController = require("../controllers/studentScheduleController");
 const studentReservationController = require("../controllers/studentReservationController");
-
 const studentMyScheduleController = require("../controllers/studentMyScheduleController");
+const studentPaymentsController = require("../controllers/studentPaymentsController");
+
+const uploadPaymentProof = require("../middlewares/uploadPaymentProof");
+const studentQrphPaymentsController = require("../controllers/studentQrphPaymentsController");
+
+const uploadSingleProof = require("../middlewares/uploadPaymentProof");
 
 // ================= MIDDLEWARE =================
 router.use(requireAuth);
 
 // helper: allow ONLY role = "user"
-const requireUserRole = (req, res) => {
+function requireUserRole(req, res) {
   const role = String(req.session.role || "").toLowerCase();
-
   if (role !== "user") {
-    return res.status(403).json({
+    res.status(403).json({
       status: "error",
       message: "Access denied. User role required.",
     });
+    return false;
   }
   return true;
-};
+}
+
+// (Debug) make sure controller functions exist
+console.log(
+  "studentPaymentsController keys:",
+  Object.keys(studentPaymentsController),
+);
 
 // ================= STUDENT DASHBOARD =================
 router.get("/dashboard", async (req, res) => {
@@ -36,9 +49,8 @@ router.get("/dashboard", async (req, res) => {
     if (!requireUserRole(req, res)) return;
 
     const userId = Number(req.session.user_id);
-    if (!userId) {
+    if (!userId)
       return res.status(401).json({ status: "error", message: "Unauthorized" });
-    }
 
     const [courses] = await pool.execute(
       `SELECT 
@@ -51,8 +63,6 @@ router.get("/dashboard", async (req, res) => {
       [userId],
     );
 
-    const sessions = [];
-
     return res.json({
       status: "success",
       user: {
@@ -63,15 +73,14 @@ router.get("/dashboard", async (req, res) => {
       },
       dashboardData: {
         enrolledCourses: courses,
-        upcomingSessions: sessions,
+        upcomingSessions: [],
       },
     });
   } catch (err) {
     console.error("student dashboard error:", err);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to load dashboard",
-    });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Failed to load dashboard" });
   }
 });
 
@@ -96,10 +105,9 @@ router.get("/courses", async (req, res) => {
     return res.json({ status: "success", data: rows });
   } catch (err) {
     console.error("get student courses error:", err);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to fetch courses",
-    });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Failed to fetch courses" });
   }
 });
 
@@ -130,60 +138,9 @@ router.get("/courses/:courseId/requirements", async (req, res) => {
     return res.json({ status: "success", data: rows });
   } catch (err) {
     console.error("student course requirements error:", err);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to fetch requirements",
-    });
-  }
-});
-
-// ================= ENROLL IN COURSE =================
-router.post("/enroll/:courseId", async (req, res) => {
-  try {
-    if (!requireUserRole(req, res)) return;
-
-    const userId = Number(req.session.user_id);
-    if (!userId) {
-      return res.status(401).json({ status: "error", message: "Unauthorized" });
-    }
-
-    const course_id = Number(req.params.courseId);
-    if (!Number.isFinite(course_id) || course_id < 1) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Invalid course id" });
-    }
-
-    const [existing] = await pool.execute(
-      `SELECT enrollment_id
-       FROM enrollments
-       WHERE student_id = ? AND course_id = ?`,
-      [userId, course_id],
-    );
-
-    if (existing.length > 0) {
-      return res.status(400).json({
-        status: "error",
-        message: "Already enrolled in this course",
-      });
-    }
-
-    await pool.execute(
-      `INSERT INTO enrollments (student_id, course_id, enrollment_status, created_at)
-       VALUES (?, ?, 'active', NOW())`,
-      [userId, course_id],
-    );
-
-    return res.status(201).json({
-      status: "success",
-      message: "Enrollment successful.",
-    });
-  } catch (err) {
-    console.error("student enroll error:", err);
-    return res.status(500).json({
-      status: "error",
-      message: "Enrollment failed",
-    });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Failed to fetch requirements" });
   }
 });
 
@@ -198,14 +155,11 @@ router.get("/availability", (req, res) => {
   return studentReservationController.getAvailability(req, res);
 });
 
-
-
+// ================= MY SCHEDULE =================
 router.get("/my-schedule", (req, res) => {
   if (!requireUserRole(req, res)) return;
   return studentMyScheduleController.getMySchedule(req, res);
 });
-
-router.get("/my-schedule", studentMyScheduleController.getMySchedule);
 
 // ================= RESERVATIONS =================
 router.post("/reservations", (req, res) => {
@@ -223,20 +177,20 @@ router.delete("/reservations/:reservationId", (req, res) => {
   return studentReservationController.cancelMyReservation(req, res);
 });
 
-// ================= STUDENT DOCUMENTS =================
-router.post("/documents/upload", upload.single("file"), (req, res) => {
-  if (!requireUserRole(req, res)) return;
-  return studentDocumentsController.uploadDocument(req, res);
-});
+// ================= REQUIREMENTS UPLOAD =================
+router.post(
+  "/reservations/:reservationId/requirements",
+  (req, res, next) => {
+    if (!requireUserRole(req, res)) return;
+    next();
+  },
+  uploadRequirements.array("files", 20),
+  (req, res) => studentRequirementsController.uploadRequirements(req, res),
+);
 
-router.get("/documents", (req, res) => {
+router.get("/reservations/:reservationId/requirements", (req, res) => {
   if (!requireUserRole(req, res)) return;
-  return studentDocumentsController.listMyDocuments(req, res);
-});
-
-router.delete("/documents/:documentId", (req, res) => {
-  if (!requireUserRole(req, res)) return;
-  return studentDocumentsController.deleteMyDocument(req, res);
+  return studentRequirementsController.listReservationRequirements(req, res);
 });
 
 // ================= APPLICATIONS =================
@@ -250,6 +204,35 @@ router.get("/applications", (req, res) => {
   return enrollmentAppController.getMyApplications(req, res);
 });
 
+// ================= PAYMENTS (GCash) =================
+// NOTE: Since studentRoutes is mounted at /api/student,
+// these become:
+// POST http://localhost:3000/api/student/payments/gcash/checkout
+// POST http://localhost:3000/api/student/payments/gcash/finalize
 
+router.post("/payments/gcash/checkout", (req, res) => {
+  if (!requireUserRole(req, res)) return;
+  return studentPaymentsController.createGcashCheckout(req, res);
+});
+
+router.post("/payments/gcash/finalize", (req, res) => {
+  if (!requireUserRole(req, res)) return;
+  return studentPaymentsController.finalizeGcashPayment(req, res);
+});
+
+
+// ================= PAYMENTS (QRPH / GCash QR) =================
+// create payment ref (tied to reservation)
+router.post("/payments/qrph/create", (req, res) =>
+  studentQrphPaymentsController.createQrphPayment(req, res),
+);
+
+
+// upload proof
+router.post(
+  "/payments/qrph/:paymentRef/proof",
+  uploadSingleProof.single("proof"),
+  (req, res) => studentQrphPaymentsController.uploadQrphProof(req, res),
+);
 
 module.exports = router;
