@@ -101,6 +101,15 @@ const login = async (req, res) => {
       req.session.track_id = null;
     }
 
+    req.session.user = {
+      user_id: user.id,
+      username: user.username,
+      fullname: user.fullname,
+      role: user.role,
+      track_code: req.session.track_code,
+      track_id: req.session.track_id,
+    };
+
     const userSession = {
       user_id: user.id,
       username: user.username,
@@ -109,15 +118,17 @@ const login = async (req, res) => {
       track: user.track_code || requestedTrack || null,
     };
 
-    // ✅ redirect per role + per track
     const redirect =
       user.role === "admin"
         ? "/admin-dashboard"
         : user.role === "instructor"
           ? "/instructor-dashboard"
-          : userSession.track === "tesda"
-            ? "/tesda-dashboard"
-            : "/student-dashboard";
+          : user.role === "trainer"
+            ? "/trainer-dashboard"
+            : userSession.track === "tesda"
+              ? "/tesda-dashboard"
+              : "/student-dashboard";
+
 
     return res.json({
       status: "success",

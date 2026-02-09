@@ -1,9 +1,9 @@
-// src/middlewares/uploadRequirements.js
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
 
-const uploadDir = path.join(__dirname, "..", "uploads", "requirements");
+// ✅ backend/uploads/requirements (outside src)
+const uploadDir = path.join(__dirname, "..", "..", "uploads", "requirements");
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -25,5 +25,5 @@ const fileFilter = (req, file, cb) => {
 module.exports = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per file
+  limits: { fileSize: 8 * 1024 * 1024 },
 });

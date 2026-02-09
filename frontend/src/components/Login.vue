@@ -1,44 +1,59 @@
 <template>
-  <div class="bg-gray-900 flex items-center justify-center min-h-screen py-4">
+  <div class="bg-gray-900 flex items-center justify-center min-h-screen p-6">
     <!-- Background Image -->
-    <div class="absolute inset-0">
-      <img src="/background.png" alt="Background" class="w-full h-full object-cover blur-sm brightness-75">
+    <div class="fixed inset-0">
+      <img src="/background.png" alt="Background" class="w-full h-full object-cover brightness-50">
     </div>
 
-    <!-- Login Card -->
-    <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 rounded-xl shadow-lg w-[28rem]">
-      <!-- Logo -->
-      <div class="flex justify-center mb-4">
-        <img src="/facet-logo.png" alt="FACET Logo" class="w-16 h-16" />
+    <!-- Modern Glass Card -->
+    <div class="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+      <!-- Logo - No background -->
+      <div class="flex justify-center mb-6">
+        <img src="/facet-logo.png" alt="FACET Logo" class="w-20 h-20" />
       </div>
 
       <!-- Track title -->
-      <h2
-        class="text-center font-semibold text-sm mb-1"
-        :class="track === 'tesda' ? 'text-blue-800' : 'text-green-800'"
-      >
-        {{ trackTitle }}
-      </h2>
+      <div class="text-center mb-6">
+        <div 
+          class="inline-flex items-center px-3 py-1 rounded-full mb-1"
+          :class="track === 'tesda' ? 'bg-blue-500/20' : 'bg-green-500/20'"
+        >
+          <div 
+            class="w-2 h-2 rounded-full mr-2"
+            :class="track === 'tesda' ? 'bg-blue-400' : 'bg-green-400'"
+          ></div>
+          <h2
+            class="text-sm font-semibold"
+            :class="track === 'tesda' ? 'text-blue-200' : 'text-green-200'"
+          >
+            {{ trackTitle }}
+          </h2>
+        </div>
+        <p class="text-xs text-gray-300 mt-1">
+          {{ trackSubtitle }}
+        </p>
+      </div>
 
-      <p class="text-center text-xs text-gray-500 mb-6">
-        {{ trackSubtitle }}
-      </p>
-
-      <!-- General Message -->
+      <!-- Message Alert -->
       <div
         v-if="message.text"
         :class="[
-          'text-center mb-4 p-2 rounded-md font-medium',
-          message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          'mb-5 p-3 rounded-lg text-sm font-medium border',
+          message.type === 'success' 
+            ? 'bg-green-500/10 border-green-500/30 text-green-300' 
+            : 'bg-red-500/10 border-red-500/30 text-red-300'
         ]"
       >
         {{ message.text }}
       </div>
 
+      <!-- Login Form -->
       <form @submit.prevent="handleLogin" class="space-y-4" id="loginForm" name="loginForm">
-        <!-- Username/Email Field -->
+        <!-- Username Field -->
         <div>
-          <label class="text-sm text-gray-700" for="username">Username / Email:</label>
+          <label class="block text-xs text-gray-300 font-medium mb-1" for="username">
+            Username / Email
+          </label>
           <input
             id="username"
             name="username"
@@ -46,17 +61,24 @@
             v-model="formData.username"
             autocomplete="username"
             required
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
-            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
+            :disabled="isLoading"
+            class="w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition disabled:opacity-50"
+            :class="track === 'tesda' ? 'focus:ring-blue-500' : 'focus:ring-green-500'"
+            placeholder="Enter your username or email"
           />
-          <p v-if="errors.username" class="text-red-600 text-sm mt-1">
+          <p v-if="errors.username" class="text-red-400 text-xs mt-1 flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
             {{ errors.username }}
           </p>
         </div>
 
         <!-- Password Field -->
         <div>
-          <label class="text-sm text-gray-700" for="password">Password:</label>
+          <label class="block text-xs text-gray-300 font-medium mb-1" for="password">
+            Password
+          </label>
           <input
             id="password"
             name="password"
@@ -64,52 +86,85 @@
             v-model="formData.password"
             autocomplete="current-password"
             required
-            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2"
-            :class="track === 'tesda' ? 'focus:ring-blue-600' : 'focus:ring-green-600'"
+            :disabled="isLoading"
+            class="w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition disabled:opacity-50"
+            :class="track === 'tesda' ? 'focus:ring-blue-500' : 'focus:ring-green-500'"
+            placeholder="Enter your password"
           />
-          <p v-if="errors.password" class="text-red-600 text-sm mt-1">
+          <p v-if="errors.password" class="text-red-400 text-xs mt-1 flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
             {{ errors.password }}
           </p>
         </div>
 
-        <!-- Submit Button -->
+        <!-- Login Button -->
         <button
           type="submit"
           :disabled="isLoading"
-          class="w-full text-white py-2 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-          :class="track === 'tesda' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'"
+          class="w-full text-white py-3 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow relative"
+          :class="track === 'tesda' 
+            ? 'bg-blue-600 hover:bg-blue-700' 
+            : 'bg-green-600 hover:bg-green-700'"
         >
-          <span v-if="isLoading">Logging in...</span>
-          <span v-else>Login</span>
+          <span v-if="isLoading" class="flex items-center justify-center">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </span>
+          <span v-else class="flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            Login
+          </span>
         </button>
       </form>
 
       <!-- Divider -->
-      <div class="flex items-center my-4">
-        <div class="flex-grow border-t border-gray-300"></div>
-        <span class="px-2 text-sm text-gray-500">or continue with</span>
-        <div class="flex-grow border-t border-gray-300"></div>
+      <div class="my-5">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/10"></div>
+          </div>
+          <div class="relative flex justify-center">
+            <span class="px-3 text-xs text-gray-400">or continue with</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Google Login Button -->
+      <!-- Google Button - Clean Design -->
       <button
         @click="handleGoogleLogin"
-        class="w-full bg-white border border-gray-300 rounded-md py-2 flex justify-center items-center space-x-2 hover:bg-gray-50 transition"
+        :disabled="isLoading"
+        class="w-full bg-white border border-gray-300 rounded-lg py-3 flex justify-center items-center space-x-3 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <img src="/google-icon.png" alt="Google" class="w-5 h-5" />
-        <span class="text-gray-700">Google</span>
+        <span class="text-gray-700 font-medium text-sm">Google</span>
       </button>
 
-      <!-- Footer Link -->
-      <p class="text-center text-sm text-gray-600 mt-4">
-        Don't have an account?
-        <a href="#" @click.prevent="goToSignup" class="text-blue-600 hover:underline">Create account</a>
-      </p>
+      <!-- Footer Links -->
+      <div class="mt-6 pt-5 border-t border-white/10">
+        <p class="text-center text-xs text-gray-400 mb-3">
+          Don't have an account?
+          <a href="#" @click.prevent="goToSignup" 
+             :class="['text-white font-medium hover:underline transition', isLoading ? 'pointer-events-none opacity-50' : '']">
+            Create account
+          </a>
+        </p>
 
-      <!-- Back to landing -->
-      <p class="text-center text-xs text-gray-500 mt-2">
-        <a href="#" @click.prevent="goToLanding" class="hover:underline">← Back to enrollment options</a>
-      </p>
+        <p class="text-center text-xs text-gray-500">
+          <a href="#" @click.prevent="goToLanding" 
+             :class="['hover:text-gray-300 transition inline-flex items-center', isLoading ? 'pointer-events-none opacity-50' : '']">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to enrollment options
+          </a>
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -194,6 +249,9 @@ export default {
 
       this.isLoading = true;
 
+      // Simulate 2-second minimum loading time
+      const minimumLoadTime = new Promise(resolve => setTimeout(resolve, 2000));
+
       try {
         const payload = {
           username: this.formData.username.trim(),
@@ -201,14 +259,18 @@ export default {
           track: this.track, // ok kahit admin/instructor; backend ignores
         };
 
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
+        // Wait for minimum load time AND the API call
+        const [_, apiResponse] = await Promise.all([
+          minimumLoadTime,
+          fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          })
+        ]);
 
-        const data = await res.json();
+        const data = await apiResponse.json();
 
         if (data.status !== "success") {
           if (data.errors) this.errors = { ...this.errors, ...data.errors };
@@ -233,13 +295,36 @@ export default {
           type: "success",
         };
 
+        // Wait a moment to show success message
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // ✅ IMPORTANT: use backend redirect (single source of truth)
-        if (data.redirect) {
-          this.$router.push(data.redirect);
-        } else {
-          // fallback just in case
-          this.$router.push("/login");
-        }
+          // normalize id para sa router guard
+          finalUser.user_id = finalUser.user_id || finalUser.id;
+
+          // save user
+          localStorage.setItem("user", JSON.stringify(finalUser));
+
+          // ROLE-BASED REDIRECT (ito ang kulang mo)
+          if (finalUser.role === "admin") {
+            this.$router.push("/admin-dashboard");
+
+          } else if (finalUser.role === "instructor") {
+            this.$router.push("/instructor-dashboard");
+
+          } else if (finalUser.role === "trainer") {
+            this.$router.push("/trainer-dashboard"); // ⭐ ITO ANG GUSTO MO
+
+          } else {
+            // student/user
+            const home =
+              finalUser.track === "tesda"
+                ? "/tesda-dashboard"
+                : "/student-dashboard";
+
+            this.$router.push(home);
+          }
+
       } catch (err) {
         console.error("Login error:", err);
         this.message = {
@@ -252,6 +337,7 @@ export default {
     },
 
     handleGoogleLogin() {
+      if (this.isLoading) return;
       console.log("Google login clicked");
     },
   },
@@ -285,5 +371,42 @@ html, body {
   min-height: 100vh;
   width: 100%;
   position: relative;
+}
+
+/* Input focus styles */
+input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+input:focus.track-tesda {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+input:focus.track-driving {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+/* Smooth transitions */
+button, a, input {
+  transition: all 0.2s ease;
+}
+
+/* Card hover effect */
+.relative.z-10:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth spinner animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -1,4 +1,4 @@
-// src/routes/adminRoutes.js
+// backend/src/routes/adminRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -15,9 +15,13 @@ const instructorController = require("../controllers/instructorController");
 const { requireAuth, requireAdmin } = require("../middlewares/authMiddleware");
 
 const adminStudentsController = require("../controllers/adminStudentsController");
-
 const adminQrphVerifyController = require("../controllers/adminQrphVerifyController");
 
+const {
+  getDrivingInstructors,
+  getDrivingCourseInstructors,
+  upsertDrivingCourseInstructor,
+} = require("../controllers/drivingInstructorAssignController");
 
 function mustBeFn(label, fn) {
   if (typeof fn !== "function") {
@@ -93,6 +97,12 @@ mustBeFn(
 mustBeFn(
   "reservationController.createWalkInReservation",
   reservationController.createWalkInReservation,
+);
+
+// ✅ NEW: required by your Vue -> GET /api/admin/reservations/:id/details
+mustBeFn(
+  "reservationController.getReservationDetailsAdmin",
+  reservationController.getReservationDetailsAdmin,
 );
 
 mustBeFn("paymentController.listPayments", paymentController.listPayments);
@@ -188,36 +198,32 @@ router.delete("/classes/:classId", classController.deleteClass);
 router.get("/schedules", scheduleController.getSchedules);
 router.post("/schedules", scheduleController.createSchedule);
 router.put("/schedules/:id", scheduleController.updateSchedule);
-router.delete("/schedules/:scheduleId", scheduleController.deleteSchedule);
+router.delete("/schedules/:id", scheduleController.deleteSchedule);
+
 
 // ================= RESERVATIONS =================
 router.get("/reservations", reservationController.listReservationsAdmin);
-router.put("/reservations/:reservationId", reservationController.updateReservationStatusAdmin);
-// (optional) walk-in creation if you want it accessible from admin panel
+
+// ✅ NEW: View Full Details endpoint (fixes your 404)
+router.get(
+  "/reservations/:reservationId/details",
+  reservationController.getReservationDetailsAdmin,
+);
+
+router.put(
+  "/reservations/:reservationId",
+  reservationController.updateReservationStatusAdmin,
+);
 router.post(
   "/reservations/walkin",
   reservationController.createWalkInReservation,
 );
 
-// ================= PAYMENTS =================
+// ================= PAYMENTS (GENERAL) =================
 router.get("/payments", paymentController.listPayments);
 router.put("/payments/:paymentId", paymentController.updatePayment);
 
-
-// ================= students =================
-router.get(
-  "/students/driving",
-  requireAuth,
-  requireAdmin,
-  adminStudentsController.listDrivingStudentsConfirmed,
-);
-
-
-
-//PAYMENT ROUTES
-
-router.get("/payments", paymentController.listPayments);
-
+// ================= QRPH PAYMENTS (VERIFY) =================
 router.get("/payments/qrph", adminQrphVerifyController.listQrphPayments);
 router.post(
   "/payments/qrph/:paymentRef/confirm",
@@ -228,5 +234,15 @@ router.post(
   adminQrphVerifyController.rejectQrphPayment,
 );
 
+// ================= STUDENTS =================
+router.get(
+  "/students/driving",
+  adminStudentsController.listDrivingStudentsConfirmed,
+);
+
+// ================= DRIVING INSTRUCTOR ASSIGN =================
+router.get("/driving/instructors", getDrivingInstructors);
+router.get("/driving/course-instructors", getDrivingCourseInstructors);
+router.post("/driving/course-instructors", upsertDrivingCourseInstructor);
 
 module.exports = router;

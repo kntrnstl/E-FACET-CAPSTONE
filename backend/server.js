@@ -67,7 +67,11 @@ app.use(
 // ==============================
 // Static uploads
 // ==============================
+// Static uploads (backend/uploads/*)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
+
 
 // ==============================
 // Routes
@@ -76,11 +80,33 @@ const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const studentRoutes = require("./src/routes/studentRoutes");
 const instructorRoutes = require("./src/routes/instructorRoutes"); // ✅ ADD THIS
+const trainerRoutes = require("./src/routes/trainerRoutes"); // ✅ ADD THIS
+const adminTesdaRoutes = require("./src/routes/adminTesdaRoutes");
+const studentResCtrl = require("./src/controllers/studentReservationController");
 
+// for testing: every 2 minutes
+setInterval(async () => {
+  const changed = await studentResCtrl.autoMarkDone();
+  if (changed > 0) console.log(`[autoDone] marked DONE: ${changed}`);
+}, 120000);
+
+
+app.use("/api/admin/tesda", adminTesdaRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/instructor", instructorRoutes); // ✅ ADD THIS
+app.use("/api/trainer", trainerRoutes);
+
+
+// DEBUG: check if session is working
+app.get("/api/debug/session", (req, res) => {
+  res.json({
+    user: req.session?.user || null,
+    sid: req.sessionID,
+  });
+});
+
 
 // ==============================
 // Test route
@@ -93,6 +119,7 @@ app.get("/", (req, res) => {
       admin: "/api/admin/*",
       student: "/api/student/*",
       instructor: "/api/instructor/*",
+      trainer: "/api/trainer/*",
     },
   });
 });

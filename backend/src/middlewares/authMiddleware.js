@@ -45,9 +45,21 @@ const requireStudent = (req, res, next) => {
   });
 };
 
+const requireTrainer = (req, res, next) => {
+  if (req.session && req.session.user_id && req.session.role === "trainer")
+    return next();
+
+  return res.status(403).json({
+    status: "error",
+    message: "Trainer access required",
+    redirect: "/login",
+  });
+};
+
 module.exports = {
   requireAuth,
   requireAdmin,
   requireInstructor,
   requireStudent,
+  requireTrainer,
 };

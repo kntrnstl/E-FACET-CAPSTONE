@@ -40,7 +40,6 @@ import StudentAttendance from "../components/student/StudentAttendance.vue";
 
 import StudentPaymentSuccess from "../components/student/StudentPaymentSuccess.vue";
 
-
 const studentRoutes = [
   {
     path: "/student-dashboard",
@@ -215,6 +214,76 @@ const instructorRoutes = [
   },
 ];
 
+
+// ✅ TRAINER (ADDED ONLY)
+const TrainerDashboard = () =>
+  import("../components/trainer/TrainerDashboard.vue");
+const TrainerAttendance = () =>
+  import("../components/trainer/TrainerAttendance.vue");
+const TrainerCourses = () =>
+  import("../components/trainer/TrainerCourses.vue");
+const TrainerStudents = () =>
+  import("../components/trainer/TrainerStudents.vue");
+const TrainerSchedule = () =>
+  import("../components/trainer/TrainerSchedule.vue");
+const TrainerCertificates = () =>
+  import("../components/trainer/TrainerCertificates.vue");
+const TrainerMessages = () =>
+  import("../components/trainer/TrainerMessages.vue");
+const TrainerSettings = () =>
+  import("../components/trainer/TrainerSettings.vue");
+
+const trainerRoutes = [
+  {
+    path: "/trainer-dashboard",
+    name: "TrainerDashboard",
+    component: TrainerDashboard,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-courses",
+    name: "TrainerCourses",
+    component: TrainerCourses,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-students",
+    name: "TrainerStudents",
+    component: TrainerStudents,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-schedule",
+    name: "TrainerSchedule",
+    component: TrainerSchedule,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-attendance",
+    name: "TrainerAttendance",
+    component: TrainerAttendance,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-certificates",
+    name: "TrainerCertificates",
+    component: TrainerCertificates,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-messages",
+    name: "TrainerMessages",
+    component: TrainerMessages,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+  {
+    path: "/trainer-settings",
+    name: "TrainerSettings",
+    component: TrainerSettings,
+    meta: { requiresAuth: true, requiresTrainer: true },
+  },
+];
+
 // ================================
 // ROUTES
 // ================================
@@ -292,14 +361,13 @@ const routes = [
     name: "AdminSettings",
     component: AdminSettings,
     meta: { requiresAuth: true, requiresAdmin: true },
-
   },
-{
-  path: "/student/payment-success",
-  name: "StudentPaymentSuccess",
-  component: StudentPaymentSuccess,
-},
 
+  {
+    path: "/student/payment-success",
+    name: "StudentPaymentSuccess",
+    component: StudentPaymentSuccess,
+  },
 
   // Student (Driving)
   ...studentRoutes,
@@ -309,6 +377,9 @@ const routes = [
 
   // ✅ Instructor (ADDED ONLY)
   ...instructorRoutes,
+
+  // ✅ Trainer (ADDED ONLY)
+  ...trainerRoutes,
 
   // Catch-all
   { path: "/:pathMatch(.*)*", redirect: "/" },
@@ -333,12 +404,12 @@ router.beforeEach((to, from, next) => {
 
   // Only protect routes that require auth (UNCHANGED)
   if (to.meta.requiresAuth) {
-    if (!user.user_id) return next("/login");
+    const uid = user.user_id || user.id;
+    if (!uid) return next("/login");
 
     // helper: where students should go (UNCHANGED)
     const studentHome =
       user.track === "tesda" ? "/tesda-dashboard" : "/student-dashboard";
-
     // ✅ Admin guard (UNCHANGED)
     if (to.meta.requiresAdmin && user.role !== "admin") {
       if (user.role === "student" || user.role === "user")
@@ -347,6 +418,7 @@ router.beforeEach((to, from, next) => {
     }
 
     // ✅ Student guard (UNCHANGED)
+
     if (
       to.meta.requiresStudent &&
       user.role !== "student" &&
@@ -372,6 +444,17 @@ router.beforeEach((to, from, next) => {
       if (user.role !== "instructor") {
         // keep existing roles behavior untouched
         if (user.role === "admin") return next("/admin-dashboard");
+        if (user.role === "student" || user.role === "user")
+          return next(studentHome);
+        return next("/login");
+      }
+    }
+
+    // ✅ TRAINER GUARD (ADDED ONLY — does NOT change admin/student/instructor behavior)
+    if (to.meta.requiresTrainer) {
+      if (user.role !== "trainer") {
+        if (user.role === "admin") return next("/admin-dashboard");
+        if (user.role === "instructor") return next("/instructor-dashboard");
         if (user.role === "student" || user.role === "user")
           return next(studentHome);
         return next("/login");

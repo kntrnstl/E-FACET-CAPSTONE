@@ -2,10 +2,7 @@
 const express = require("express");
 const router = express.Router();
 
-const {
-  requireAuth,
-  requireInstructor,
-} = require("../middlewares/authMiddleware");
+const { requireAuth, requireInstructor } = require("../middlewares/authMiddleware");
 
 // All instructor routes require login + instructor
 router.use(requireAuth);
@@ -29,5 +26,15 @@ router.get("/dashboard", (req, res) => {
     },
   });
 });
+
+// ✅ Instructor can only VIEW assigned classes (TESDA)
+const { getTesdaClasses } = require("../controllers/tesdaClassesController");
+const { getDrivingInstructorClasses } = require("../controllers/drivingInstructorClassesController");
+const { getDrivingClasses } = require("../controllers/drivingClassesController");
+
+
+router.get("/driving/classes", getDrivingClasses);
+router.get("/tesda/classes", getTesdaClasses);
+router.get("/driving/classes", getDrivingInstructorClasses);
 
 module.exports = router;

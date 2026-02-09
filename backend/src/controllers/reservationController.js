@@ -1,5 +1,18 @@
-// src/controllers/reservationController.js
+// backend/src/controllers/reservationController.js
 const pool = require("../config/database");
+
+// statuses that occupy slot
+const OCCUPYING_STATUSES = ["PENDING", "CONFIRMED", "APPROVED", "ACTIVE"];
+
+function ph(arr) {
+  return arr.map(() => "?").join(",");
+}
+
+function toYMD(dateLike) {
+  if (!dateLike) return "";
+  const s = String(dateLike);
+  return s.includes("T") ? s.split("T")[0] : s;
+}
 
 function monthRange(monthStr) {
   const [y, m] = String(monthStr).split("-").map(Number);
@@ -9,14 +22,18 @@ function monthRange(monthStr) {
   const pad = (n) => String(n).padStart(2, "0");
   const toDate = (d) =>
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
   return { start: toDate(start), end: toDate(end) };
 }
 
 function timeToMinutes(t) {
-  const [h, m] = String(t).split(":").map(Number);
-  return h * 60 + (m || 0);
+  const [h, m] = String(t || "")
+    .split(":")
+    .map(Number);
+  return (h || 0) * 60 + (m || 0);
 }
 
+// ✅ Conflict check using schedules.schedule_date + overlap time
 async function hasScheduleConflict(conn, studentId, scheduleId) {
   const [rows] = await conn.execute(
     `
@@ -26,136 +43,135 @@ async function hasScheduleConflict(conn, studentId, scheduleId) {
     JOIN schedules s2 ON s2.schedule_id = ?
     WHERE r.student_id = ?
       AND r.reservation_status != 'CANCELLED'
-      AND s1.session_date = s2.session_date
-      AND (
-        s1.start_time < s2.end_time
-        AND s2.start_time < s1.end_time
-      )
+      AND s1.schedule_date = s2.schedule_date
+      AND (s1.start_time < s2.end_time AND s2.start_time < s1.end_time)
     LIMIT 1
     `,
     [Number(scheduleId), Number(studentId)],
   );
-
   return rows.length > 0;
 }
 
-// ✅ find next available schedule (same course, after current date/time, same session_type)
+// ✅ find next available schedule (same course, after current date/time)
 async function findNextAvailableSchedule(conn, courseId, fromScheduleId) {
   const [cur] = await conn.execute(
     `
-    SELECT s.session_date, s.start_time, s.session_type
-    FROM schedules s
-    WHERE s.schedule_id = ?
+    SELECT schedule_date, start_time
+    FROM schedules
+    WHERE schedule_id = ?
+    LIMIT 1
     `,
     [Number(fromScheduleId)],
   );
 
-  if (cur.length === 0) return null;
+  if (!cur.length) return null;
 
-  const curDate = cur[0].session_date;
+  const curDate = toYMD(cur[0].schedule_date);
   const curTime = cur[0].start_time;
-  const curType = cur[0].session_type;
 
   const [candidates] = await conn.execute(
     `
-    SELECT s.schedule_id
-    FROM schedules s
-    JOIN classes cl ON cl.class_id = s.class_id
-    WHERE cl.course_id = ?
-      AND (s.session_date > ? OR (s.session_date = ? AND s.start_time > ?))
-      AND s.session_type = ?
-    ORDER BY s.session_date ASC, s.start_time ASC
+    SELECT schedule_id
+    FROM schedules
+    WHERE course_id = ?
+      AND LOWER(status) = 'open'
+      AND (schedule_date > ? OR (schedule_date = ? AND start_time > ?))
+    ORDER BY schedule_date ASC, start_time ASC
     LIMIT 50
     `,
-    [Number(courseId), curDate, curDate, curTime, curType],
+    [Number(courseId), curDate, curDate, curTime],
   );
 
+  const placeholders = ph(OCCUPYING_STATUSES);
+
   for (const cand of candidates) {
-    // lock schedule row
+    const sid = Number(cand.schedule_id);
+
     const [locked] = await conn.execute(
       `
-      SELECT schedule_id, capacity
+      SELECT schedule_id, total_slots
       FROM schedules
       WHERE schedule_id = ?
       FOR UPDATE
       `,
-      [Number(cand.schedule_id)],
+      [sid],
     );
+    if (!locked.length) continue;
 
-    if (locked.length === 0) continue;
+    const totalSlots = Number(locked[0].total_slots || 0);
+    if (totalSlots <= 0) continue;
 
-    const capacity = Number(locked[0].capacity);
-    if (capacity <= 0) continue;
-
-    // lock count
     const [countRows] = await conn.execute(
       `
       SELECT COUNT(*) AS booked
       FROM schedule_reservations
-      WHERE schedule_id = ? AND reservation_status != 'CANCELLED'
+      WHERE schedule_id = ?
+        AND reservation_status IN (${placeholders})
       FOR UPDATE
       `,
-      [Number(cand.schedule_id)],
+      [sid, ...OCCUPYING_STATUSES],
     );
 
-    const booked = Number(countRows[0].booked);
-
-    if (booked < capacity) {
-      return Number(cand.schedule_id);
-    }
+    const booked = Number(countRows[0].booked || 0);
+    if (booked < totalSlots) return sid;
   }
 
   return null;
 }
 
-// ✅ compute fee from course_fee_options
+// ✅ optional fee options helper (safe kahit walang table)
 async function resolveCourseFee(conn, courseId, feeOptionCode) {
-  const [opts] = await conn.execute(
-    `
-    SELECT option_code, amount
-    FROM course_fee_options
-    WHERE course_id = ? AND is_active = 1
-    ORDER BY sort_order ASC
-    `,
-    [Number(courseId)],
-  );
+  try {
+    const [opts] = await conn.execute(
+      `
+      SELECT option_code, amount
+      FROM course_fee_options
+      WHERE course_id = ? AND is_active = 1
+      ORDER BY sort_order ASC
+      `,
+      [Number(courseId)],
+    );
 
-  if (opts.length === 0) {
+    if (opts.length === 0) return { amount: 0.0, chosenOption: null };
+
+    if (opts.length === 1) {
+      return {
+        amount: Number(opts[0].amount),
+        chosenOption: opts[0].option_code,
+      };
+    }
+
+    if (!feeOptionCode) {
+      return {
+        error: "FEE_OPTION_REQUIRED",
+        options: opts.map((o) => o.option_code),
+      };
+    }
+
+    const code = String(feeOptionCode).toUpperCase();
+    const match = opts.find(
+      (o) => String(o.option_code).toUpperCase() === code,
+    );
+
+    if (!match) {
+      return {
+        error: "INVALID_FEE_OPTION",
+        options: opts.map((o) => o.option_code),
+      };
+    }
+
+    return { amount: Number(match.amount), chosenOption: match.option_code };
+  } catch (e) {
     return { amount: 0.0, chosenOption: null };
   }
-
-  if (opts.length === 1) {
-    return {
-      amount: Number(opts[0].amount),
-      chosenOption: opts[0].option_code,
-    };
-  }
-
-  if (!feeOptionCode) {
-    return {
-      error: "FEE_OPTION_REQUIRED",
-      options: opts.map((o) => o.option_code),
-    };
-  }
-
-  const code = String(feeOptionCode).toUpperCase();
-  const match = opts.find((o) => String(o.option_code).toUpperCase() === code);
-
-  if (!match) {
-    return {
-      error: "INVALID_FEE_OPTION",
-      options: opts.map((o) => o.option_code),
-    };
-  }
-
-  return { amount: Number(match.amount), chosenOption: match.option_code };
 }
 
-// ===================== STUDENT: AVAILABILITY =====================
-// GET /api/student/availability?course_id=1&month=2026-02
+// ===================== STUDENT: MONTH AVAILABILITY (CALENDAR) =====================
+// GET /api/student/schedules?course_id=1&month=YYYY-MM
 exports.getAvailability = async (req, res) => {
   try {
     const { course_id, month } = req.query;
+
     if (!course_id || !month) {
       return res.status(400).json({
         status: "error",
@@ -164,87 +180,113 @@ exports.getAvailability = async (req, res) => {
     }
 
     const { start, end } = monthRange(month);
+    const placeholders = ph(OCCUPYING_STATUSES);
 
     const [rows] = await pool.execute(
       `
-      SELECT 
-        s.schedule_id,
-        s.session_date,
-        s.start_time,
-        s.end_time,
-        s.session_type,
-        s.capacity,
-        COALESCE(SUM(CASE WHEN r.reservation_status != 'CANCELLED' THEN 1 ELSE 0 END), 0) AS booked
+      SELECT
+        s.schedule_date AS date,
+        SUM(s.total_slots) AS totalSlots,
+        COALESCE(SUM(r.reservedCount), 0) AS reservedCount,
+        GREATEST(SUM(s.total_slots) - COALESCE(SUM(r.reservedCount),0), 0) AS availableSlots
       FROM schedules s
-      JOIN classes cl ON cl.class_id = s.class_id
-      LEFT JOIN schedule_reservations r ON r.schedule_id = s.schedule_id
-      WHERE cl.course_id = ?
-        AND s.session_date >= ?
-        AND s.session_date < ?
-      GROUP BY s.schedule_id
-      ORDER BY s.session_date ASC, s.start_time ASC
+      LEFT JOIN (
+        SELECT schedule_id, COUNT(*) AS reservedCount
+        FROM schedule_reservations
+        WHERE reservation_status IN (${placeholders})
+        GROUP BY schedule_id
+      ) r ON r.schedule_id = s.schedule_id
+      WHERE s.course_id = ?
+        AND LOWER(s.status) = 'open'
+        AND s.schedule_date >= ?
+        AND s.schedule_date < ?
+      GROUP BY s.schedule_date
+      ORDER BY s.schedule_date ASC
       `,
-      [Number(course_id), start, end],
+      [...OCCUPYING_STATUSES, Number(course_id), start, end],
     );
 
-    const data = rows.map((r) => ({
-      schedule_id: r.schedule_id,
-      date: r.session_date,
-      start_time: r.start_time,
-      end_time: r.end_time,
-      session_type: r.session_type,
-      capacity: Number(r.capacity),
-      booked: Number(r.booked),
-      remaining: Math.max(Number(r.capacity) - Number(r.booked), 0),
-      available: Number(r.capacity) > Number(r.booked),
+    const data = rows.map((x) => ({
+      date: toYMD(x.date),
+      totalSlots: Number(x.totalSlots || 0),
+      reservedCount: Number(x.reservedCount || 0),
+      availableSlots: Number(x.availableSlots || 0),
     }));
 
-    res.json({ status: "success", data });
+    return res.json({ status: "success", data });
   } catch (err) {
     console.error("getAvailability error:", err);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to load availability" });
+    return res.status(500).json({
+      status: "error",
+      message: err.sqlMessage || err.message || "Failed to load availability",
+    });
   }
 };
 
-// ===================== STUDENT: CREATE RESERVATION (ONLINE) =====================
+// ===================== STUDENT: CREATE RESERVATION (LOCK SLOT) =====================
 // POST /api/student/reservations
-// body: { schedule_id, course_id, payment_method, notes, fee_option_code }
 exports.createReservation = async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    const studentId = req.session.user_id;
-    const { schedule_id, course_id, payment_method, notes, fee_option_code } =
-      req.body;
-
+    const studentId = Number(req.session?.user_id);
     if (!studentId) {
       return res
         .status(401)
         .json({ status: "error", message: "Not authenticated" });
     }
 
-    if (!schedule_id || !course_id) {
+    const {
+      schedule_id,
+      course_id,
+      payment_method,
+      notes,
+      fee_option_code,
+      requirements_mode,
+      payment_ref,
+    } = req.body;
+
+    if (!schedule_id || !course_id || !payment_method) {
       return res.status(400).json({
         status: "error",
-        message: "schedule_id and course_id are required",
+        message: "schedule_id, course_id, payment_method are required",
       });
     }
+
+    const sid = Number(schedule_id);
+    const cid = Number(course_id);
+
+    if (!Number.isFinite(sid) || sid < 1 || !Number.isFinite(cid) || cid < 1) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid schedule_id/course_id" });
+    }
+
+    const payMethod = String(payment_method).trim().toUpperCase();
+    if (!["GCASH", "CASH"].includes(payMethod)) {
+      return res.status(400).json({
+        status: "error",
+        message: "payment_method must be GCASH or CASH",
+      });
+    }
+
+    const reqMode =
+      String(requirements_mode || "walkin").toLowerCase() === "online"
+        ? "online"
+        : "walkin";
 
     await conn.beginTransaction();
 
     const [schedRows] = await conn.execute(
       `
-      SELECT s.schedule_id, s.capacity, s.start_time, s.end_time, cl.course_id
-      FROM schedules s
-      JOIN classes cl ON cl.class_id = s.class_id
-      WHERE s.schedule_id = ?
+      SELECT schedule_id, course_id, schedule_date, start_time, end_time, total_slots, status
+      FROM schedules
+      WHERE schedule_id = ?
       FOR UPDATE
       `,
-      [Number(schedule_id)],
+      [sid],
     );
 
-    if (schedRows.length === 0) {
+    if (!schedRows.length) {
       await conn.rollback();
       return res
         .status(404)
@@ -253,11 +295,40 @@ exports.createReservation = async (req, res) => {
 
     const sched = schedRows[0];
 
-    if (Number(sched.course_id) !== Number(course_id)) {
+    if (Number(sched.course_id) !== cid) {
       await conn.rollback();
       return res.status(400).json({
         status: "error",
         message: "course_id does not match schedule course",
+      });
+    }
+
+    if (String(sched.status || "").toLowerCase() !== "open") {
+      await conn.rollback();
+      return res
+        .status(400)
+        .json({ status: "error", message: "Schedule is not open" });
+    }
+
+    const scheduleDate = toYMD(sched.schedule_date);
+    if (!scheduleDate) {
+      await conn.rollback();
+      return res.status(500).json({
+        status: "error",
+        message: "Schedule has invalid schedule_date",
+      });
+    }
+
+    // prevent past schedule
+    const [pastRows] = await conn.execute(
+      `SELECT 1 FROM schedules WHERE schedule_id = ? AND schedule_date < CURDATE() LIMIT 1`,
+      [sid],
+    );
+    if (pastRows.length) {
+      await conn.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: "Hindi puwede mag-reserve sa past date.",
       });
     }
 
@@ -268,20 +339,31 @@ exports.createReservation = async (req, res) => {
         .json({ status: "error", message: "Invalid schedule time range" });
     }
 
+    const conflict = await hasScheduleConflict(conn, studentId, sid);
+    if (conflict) {
+      await conn.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: "You already have another reservation at the same date/time",
+      });
+    }
+
+    const placeholders = ph(OCCUPYING_STATUSES);
     const [countRows] = await conn.execute(
       `
       SELECT COUNT(*) AS booked
       FROM schedule_reservations
-      WHERE schedule_id = ? AND reservation_status != 'CANCELLED'
+      WHERE schedule_id = ?
+        AND reservation_status IN (${placeholders})
       FOR UPDATE
       `,
-      [Number(schedule_id)],
+      [sid, ...OCCUPYING_STATUSES],
     );
 
-    const booked = Number(countRows[0].booked);
-    const capacity = Number(sched.capacity);
+    const booked = Number(countRows[0].booked || 0);
+    const totalSlots = Number(sched.total_slots || 0);
 
-    if (capacity <= 0) {
+    if (totalSlots <= 0) {
       await conn.rollback();
       return res.status(400).json({
         status: "error",
@@ -289,19 +371,73 @@ exports.createReservation = async (req, res) => {
       });
     }
 
-    if (booked >= capacity) {
+    if (booked >= totalSlots) {
       await conn.rollback();
       return res
         .status(400)
         .json({ status: "error", message: "No slots available (FULL)" });
     }
 
-    const payMethod = payment_method
-      ? String(payment_method).toUpperCase()
-      : null;
+    // ✅ if GCASH, require payment_ref + proof submitted
+    if (payMethod === "GCASH") {
+      const ref = String(payment_ref || "").trim();
+      if (!ref) {
+        await conn.rollback();
+        return res.status(400).json({
+          status: "error",
+          message: "payment_ref is required for GCash",
+        });
+      }
 
-    const fee = await resolveCourseFee(conn, course_id, fee_option_code);
+      const [payRows] = await conn.execute(
+        `
+        SELECT id, payment_ref, student_id, schedule_id, course_id, status, proof_url
+        FROM student_payment_submissions
+        WHERE payment_ref = ?
+          AND student_id = ?
+        LIMIT 1
+        `,
+        [ref, studentId],
+      );
 
+      if (!payRows.length) {
+        await conn.rollback();
+        return res
+          .status(400)
+          .json({ status: "error", message: "Invalid payment_ref" });
+      }
+
+      const p = payRows[0];
+      if (Number(p.schedule_id) !== sid || Number(p.course_id) !== cid) {
+        await conn.rollback();
+        return res.status(400).json({
+          status: "error",
+          message: "payment_ref does not match the selected schedule/course.",
+        });
+      }
+
+      if (
+        String(p.status || "").toUpperCase() !== "PROOF_SUBMITTED" ||
+        !p.proof_url
+      ) {
+        await conn.rollback();
+        return res.status(400).json({
+          status: "error",
+          message: "Upload proof first before reserving.",
+        });
+      }
+
+      await conn.execute(
+        `
+        UPDATE student_payment_submissions
+        SET status='FOR_VERIFICATION', updated_at=NOW()
+        WHERE payment_ref=? AND student_id=?
+        `,
+        [ref, studentId],
+      );
+    }
+
+    const fee = await resolveCourseFee(conn, cid, fee_option_code);
     if (fee.error === "FEE_OPTION_REQUIRED") {
       await conn.rollback();
       return res.status(400).json({
@@ -310,7 +446,6 @@ exports.createReservation = async (req, res) => {
         options: fee.options,
       });
     }
-
     if (fee.error === "INVALID_FEE_OPTION") {
       await conn.rollback();
       return res.status(400).json({
@@ -320,67 +455,51 @@ exports.createReservation = async (req, res) => {
       });
     }
 
-    const conflict = await hasScheduleConflict(conn, studentId, schedule_id);
-
-    if (conflict) {
-      await conn.rollback();
-      return res.status(400).json({
-        status: "error",
-        message: "You already have another reservation at the same date/time",
-      });
-    }
-
     const [ins] = await conn.execute(
       `
       INSERT INTO schedule_reservations
-        (schedule_id, student_id, course_id, reservation_source, reservation_status, payment_method, notes, fee_option_code, created_by)
+        (schedule_id, student_id, course_id,
+         reservation_source, reservation_status,
+         payment_method, notes, fee_option_code, requirements_mode,
+         expires_at, created_by, created_at, updated_at)
       VALUES
-        (?, ?, ?, 'ONLINE', 'PENDING', ?, ?, ?, NULL)
+        (?, ?, ?,
+         'ONLINE', 'CONFIRMED',
+         ?, ?, ?, ?,
+         TIMESTAMP(?, '23:59:59'),
+         ?, NOW(), NOW())
       `,
       [
-        Number(schedule_id),
-        Number(studentId),
-        Number(course_id),
+        sid,
+        studentId,
+        cid,
         payMethod,
         notes ?? null,
-        fee.chosenOption,
+        fee.chosenOption ?? null,
+        reqMode,
+        scheduleDate,
+        studentId,
       ],
     );
 
     const reservationId = ins.insertId;
 
-    await conn.execute(
-      `
-      INSERT INTO payments (reservation_id, student_id, amount, method, payment_status, created_by)
-      VALUES (?, ?, ?, ?, 'UNPAID', NULL)
-      `,
-      [
-        Number(reservationId),
-        Number(studentId),
-        fee.amount,
-        payMethod || "CASH",
-      ],
-    );
-
     await conn.commit();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: "success",
-      message: "Reservation created (PENDING)",
-      data: { reservation_id: reservationId },
+      message: "Reservation created (CONFIRMED)",
+      data: { reservation_id: reservationId, schedule_date: scheduleDate },
     });
   } catch (err) {
-    await conn.rollback();
-
-    if (String(err.message || "").includes("uniq_student_schedule")) {
-      return res.status(400).json({
-        status: "error",
-        message: "You already reserved this schedule",
-      });
-    }
-
+    try {
+      await conn.rollback();
+    } catch (_) {}
     console.error("createReservation error:", err);
-    res.status(500).json({ status: "error", message: "Reservation failed" });
+    return res.status(500).json({
+      status: "error",
+      message: err.sqlMessage || err.message || "Reservation failed",
+    });
   } finally {
     conn.release();
   }
@@ -390,94 +509,21 @@ exports.createReservation = async (req, res) => {
 // GET /api/student/reservations
 exports.listMyReservations = async (req, res) => {
   try {
-    const studentId = req.session.user_id;
-    if (!studentId) {
+    const studentId = Number(req.session?.user_id);
+    if (!studentId)
       return res
         .status(401)
         .json({ status: "error", message: "Not authenticated" });
-    }
 
-    const [rows] = await pool.execute(
-      `
-      SELECT 
-        r.reservation_id,
-        r.reservation_status,
-        r.reservation_source,
-        r.payment_method,
-        r.notes,
-        r.created_at,
-        c.course_name,
-        s.session_date,
-        s.start_time,
-        s.end_time,
-        s.session_type,
-        p.payment_id,
-        p.amount,
-        p.payment_status,
-        p.method,
-        p.reference_no,
-        p.official_receipt_no,
-        p.paid_at
-      FROM schedule_reservations r
-      JOIN courses c ON c.course_id = r.course_id
-      JOIN schedules s ON s.schedule_id = r.schedule_id
-      LEFT JOIN payments p ON p.reservation_id = r.reservation_id
-      WHERE r.student_id = ?
-      ORDER BY r.created_at DESC
-      `,
-      [Number(studentId)],
-    );
-
-    res.json({ status: "success", data: rows });
-  } catch (err) {
-    console.error("listMyReservations error:", err);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to fetch reservations" });
-  }
-};
-
-// ===================== STUDENT: CANCEL MY RESERVATION =====================
-// DELETE /api/student/reservations/:reservationId
-exports.cancelMyReservation = async (req, res) => {
-  try {
-    const studentId = req.session.user_id;
-    const { reservationId } = req.params;
-
-    const [result] = await pool.execute(
-      `
-      UPDATE schedule_reservations
-      SET reservation_status='CANCELLED'
-      WHERE reservation_id=? AND student_id=?
-      `,
-      [Number(reservationId), Number(studentId)],
-    );
-
-    if (result.affectedRows === 0) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Reservation not found" });
-    }
-
-    res.json({ status: "success", message: "Reservation cancelled" });
-  } catch (err) {
-    console.error("cancelMyReservation error:", err);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to cancel reservation" });
-  }
-};
-
-// ===================== ADMIN: LIST RESERVATIONS =====================
-// GET /api/admin/reservations?schedule_id=#
-exports.listReservationsAdmin = async (req, res) => {
-  try {
-    const { schedule_id } = req.query;
+    const { schedule_id, status } = req.query;
 
     let sql = `
       SELECT
         r.reservation_id,
         r.reservation_status,
+        r.payment_method,
+        r.requirements_mode,
+        r.notes,
         r.created_at,
 
         u.id AS student_id,
@@ -489,29 +535,197 @@ exports.listReservationsAdmin = async (req, res) => {
         s.schedule_id,
         s.schedule_date AS schedule_date,
         TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
-        TIME_FORMAT(s.end_time, '%H:%i') AS endTime
+        TIME_FORMAT(s.end_time, '%H:%i') AS endTime,
 
+        sp.payment_ref,
+        sp.status AS payment_status,
+        sp.proof_url,
+        sp.amount_centavos,
+        sp.currency,
+        sp.created_at AS payment_created_at
       FROM schedule_reservations r
       LEFT JOIN users u ON u.id = r.student_id
       LEFT JOIN schedules s ON s.schedule_id = r.schedule_id
-
-      -- ✅ IMPORTANT: courses table mo uses id, so use this ONLY
       LEFT JOIN courses c ON c.id = COALESCE(s.course_id, r.course_id)
+
+      LEFT JOIN student_payment_submissions sp
+        ON sp.id = (
+          SELECT sp2.id
+          FROM student_payment_submissions sp2
+          WHERE sp2.student_id = r.student_id
+            AND sp2.schedule_id = r.schedule_id
+            AND sp2.course_id = r.course_id
+          ORDER BY sp2.id DESC
+          LIMIT 1
+        )
     `;
 
     const params = [];
+    const where = ["r.student_id = ?"];
+    params.push(studentId);
 
     if (schedule_id) {
-      sql += ` WHERE r.schedule_id = ?`;
+      where.push("r.schedule_id = ?");
       params.push(Number(schedule_id));
     }
+    if (status) {
+      where.push("UPPER(r.reservation_status) = ?");
+      params.push(String(status).toUpperCase());
+    }
 
+    sql += ` WHERE ${where.join(" AND ")}`;
     sql += ` ORDER BY r.created_at DESC`;
 
     const [rows] = await pool.execute(sql, params);
     return res.json({ status: "success", data: rows });
   } catch (err) {
-    console.error("[BACKEND] listReservationsAdmin error:", err);
+    console.error("listMyReservations error:", err);
+    return res
+      .status(500)
+      .json({ status: "error", message: err.sqlMessage || err.message });
+  }
+};
+
+// ===================== STUDENT: CANCEL MY RESERVATION =====================
+// DELETE /api/student/reservations/:reservationId
+exports.cancelMyReservation = async (req, res) => {
+  try {
+    const studentId = Number(req.session?.user_id);
+    const reservationId = Number(req.params?.reservationId);
+
+    if (!studentId)
+      return res
+        .status(401)
+        .json({ status: "error", message: "Not authenticated" });
+    if (!reservationId)
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid reservationId" });
+
+    const [result] = await pool.execute(
+      `
+      UPDATE schedule_reservations
+      SET reservation_status='CANCELLED', updated_at=NOW()
+      WHERE reservation_id=? AND student_id=?
+      `,
+      [reservationId, studentId],
+    );
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Reservation not found" });
+    }
+
+    return res.json({ status: "success", message: "Reservation cancelled" });
+  } catch (err) {
+    console.error("cancelMyReservation error:", err);
+    return res
+      .status(500)
+      .json({ status: "error", message: "Failed to cancel reservation" });
+  }
+};
+
+// ===================== ADMIN: LIST RESERVATIONS =====================
+// GET /api/admin/reservations?schedule_id=#&status=#
+exports.listReservationsAdmin = async (req, res) => {
+  try {
+    const { schedule_id, status } = req.query;
+
+    // ✅ "admin_status" logic:
+    // - If reservation is GCASH and payment submission is FOR_VERIFICATION/PROOF_SUBMITTED
+    //   show as PENDING in admin (while student stays CONFIRMED)
+    // - Otherwise, show real reservation_status
+    let sql = `
+      SELECT
+        r.reservation_id,
+        r.reservation_status,
+        r.payment_method,
+        r.requirements_mode,
+        r.notes,
+        r.created_at,
+
+        r.student_id,
+        r.course_id,
+        r.schedule_id,
+
+        u.fullname AS student_name,
+        u.email AS email,
+
+        COALESCE(c.course_name, '(unknown course)') AS course_name,
+
+        s.schedule_date AS schedule_date,
+        TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
+        TIME_FORMAT(s.end_time, '%H:%i') AS endTime,
+
+        sp.payment_ref,
+        sp.status AS payment_status,
+        sp.proof_url,
+        sp.amount_centavos,
+        sp.currency,
+
+CASE
+  -- pag DONE/CANCELLED na, wag na i-override
+  WHEN UPPER(r.reservation_status) IN ('DONE','CANCELLED')
+    THEN UPPER(r.reservation_status)
+
+  -- gawin lang PENDING sa admin kapag GCASH + pending verify AND still CONFIRMED
+  WHEN UPPER(r.payment_method) = 'GCASH'
+   AND UPPER(COALESCE(sp.status,'')) IN ('FOR_VERIFICATION','PROOF_SUBMITTED')
+   AND UPPER(r.reservation_status) = 'CONFIRMED'
+    THEN 'PENDING'
+
+  ELSE UPPER(r.reservation_status)
+END AS admin_status
+
+
+      FROM schedule_reservations r
+      LEFT JOIN users u ON u.id = r.student_id
+      LEFT JOIN schedules s ON s.schedule_id = r.schedule_id
+      LEFT JOIN courses c ON c.id = COALESCE(s.course_id, r.course_id)
+
+      LEFT JOIN student_payment_submissions sp
+        ON sp.id = (
+          SELECT sp2.id
+          FROM student_payment_submissions sp2
+          WHERE sp2.student_id = r.student_id
+            AND sp2.schedule_id = r.schedule_id
+            AND sp2.course_id = r.course_id
+          ORDER BY sp2.id DESC
+          LIMIT 1
+        )
+    `;
+
+    const params = [];
+    const where = [];
+
+    if (schedule_id) {
+      where.push("r.schedule_id = ?");
+      params.push(Number(schedule_id));
+    }
+
+    if (status) {
+      const st = String(status).toUpperCase();
+
+      // ✅ special: admin "PENDING" means "pending payment verification"
+      if (st === "PENDING") {
+        where.push(`
+          UPPER(r.payment_method) = 'GCASH'
+          AND UPPER(COALESCE(sp.status,'')) IN ('FOR_VERIFICATION','PROOF_SUBMITTED')
+        `);
+      } else {
+        where.push("UPPER(r.reservation_status) = ?");
+        params.push(st);
+      }
+    }
+
+    if (where.length) sql += ` WHERE ${where.join(" AND ")}`;
+    sql += ` ORDER BY r.created_at DESC`;
+
+    const [rows] = await pool.execute(sql, params);
+    return res.json({ status: "success", data: rows });
+  } catch (err) {
+    console.error("listReservationsAdmin error:", err);
     return res.status(500).json({
       status: "error",
       message: err.sqlMessage || err.message || "Failed to fetch reservations",
@@ -523,25 +737,30 @@ exports.listReservationsAdmin = async (req, res) => {
 // PUT /api/admin/reservations/:reservationId
 exports.updateReservationStatusAdmin = async (req, res) => {
   try {
-    const { reservationId } = req.params;
-    const { status } = req.body;
+    const reservationId = Number(req.params?.reservationId);
+    const status = String(req.body?.status || "").toUpperCase();
 
-    if (
-      !status ||
-      !["CONFIRMED", "CANCELLED", "PENDING"].includes(
-        String(status).toUpperCase(),
-      )
-    ) {
+    const allowed = [
+      "PENDING",
+      "CONFIRMED",
+      "APPROVED",
+      "ACTIVE",
+      "DONE",
+      "CANCELLED",
+    ];
+
+    if (!reservationId)
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid reservationId" });
+    if (!allowed.includes(status))
       return res
         .status(400)
         .json({ status: "error", message: "Invalid status" });
-    }
-
-    const newStatus = String(status).toUpperCase();
 
     const [result] = await pool.execute(
-      `UPDATE schedule_reservations SET reservation_status=? WHERE reservation_id=?`,
-      [newStatus, Number(reservationId)],
+      `UPDATE schedule_reservations SET reservation_status=?, updated_at=NOW() WHERE reservation_id=?`,
+      [status, reservationId],
     );
 
     if (result.affectedRows === 0) {
@@ -550,13 +769,13 @@ exports.updateReservationStatusAdmin = async (req, res) => {
         .json({ status: "error", message: "Reservation not found" });
     }
 
-    res.json({
+    return res.json({
       status: "success",
-      message: `Reservation updated to ${newStatus}`,
+      message: `Reservation updated to ${status}`,
     });
   } catch (err) {
     console.error("updateReservationStatusAdmin error:", err);
-    res
+    return res
       .status(500)
       .json({ status: "error", message: "Failed to update reservation" });
   }
@@ -567,7 +786,11 @@ exports.updateReservationStatusAdmin = async (req, res) => {
 exports.createWalkInReservation = async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    const encoderId = req.session.user_id;
+    const encoderId = Number(req.session?.user_id);
+    if (!encoderId)
+      return res
+        .status(401)
+        .json({ status: "error", message: "Not authenticated" });
 
     const {
       student_id,
@@ -576,16 +799,10 @@ exports.createWalkInReservation = async (req, res) => {
       payment_method,
       notes,
       auto_confirm,
-      official_receipt_no,
       reference_no,
+      official_receipt_no,
       fee_option_code,
     } = req.body;
-
-    if (!encoderId) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Not authenticated" });
-    }
 
     if (!student_id || !schedule_id || !course_id) {
       return res.status(400).json({
@@ -594,21 +811,23 @@ exports.createWalkInReservation = async (req, res) => {
       });
     }
 
+    const studentId = Number(student_id);
+    const sid = Number(schedule_id);
+    const cid = Number(course_id);
+
     await conn.beginTransaction();
 
-    // lock chosen schedule + validate course
     const [schedRows] = await conn.execute(
       `
-      SELECT s.schedule_id, s.capacity, cl.course_id
-      FROM schedules s
-      JOIN classes cl ON cl.class_id = s.class_id
-      WHERE s.schedule_id = ?
+      SELECT schedule_id, course_id, schedule_date, total_slots, status
+      FROM schedules
+      WHERE schedule_id = ?
       FOR UPDATE
       `,
-      [Number(schedule_id)],
+      [sid],
     );
 
-    if (schedRows.length === 0) {
+    if (!schedRows.length) {
       await conn.rollback();
       return res
         .status(404)
@@ -617,7 +836,7 @@ exports.createWalkInReservation = async (req, res) => {
 
     const sched = schedRows[0];
 
-    if (Number(sched.course_id) !== Number(course_id)) {
+    if (Number(sched.course_id) !== cid) {
       await conn.rollback();
       return res.status(400).json({
         status: "error",
@@ -625,21 +844,42 @@ exports.createWalkInReservation = async (req, res) => {
       });
     }
 
-    // lock count for chosen schedule
+    if (String(sched.status || "").toLowerCase() !== "open") {
+      await conn.rollback();
+      return res
+        .status(400)
+        .json({ status: "error", message: "Schedule is not open" });
+    }
+
+    const [pastRows] = await conn.execute(
+      `SELECT 1 FROM schedules WHERE schedule_id=? AND schedule_date < CURDATE() LIMIT 1`,
+      [sid],
+    );
+    if (pastRows.length) {
+      await conn.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: "Cannot reserve past schedule date.",
+      });
+    }
+
+    const placeholders = ph(OCCUPYING_STATUSES);
+
     const [countRows] = await conn.execute(
       `
       SELECT COUNT(*) AS booked
       FROM schedule_reservations
-      WHERE schedule_id=? AND reservation_status!='CANCELLED'
+      WHERE schedule_id = ?
+        AND reservation_status IN (${placeholders})
       FOR UPDATE
       `,
-      [Number(schedule_id)],
+      [sid, ...OCCUPYING_STATUSES],
     );
 
-    const booked = Number(countRows[0].booked);
-    const capacity = Number(sched.capacity);
+    const booked = Number(countRows[0].booked || 0);
+    const totalSlots = Number(sched.total_slots || 0);
 
-    if (capacity <= 0) {
+    if (totalSlots <= 0) {
       await conn.rollback();
       return res.status(400).json({
         status: "error",
@@ -647,17 +887,11 @@ exports.createWalkInReservation = async (req, res) => {
       });
     }
 
-    // ✅ auto resched if full
-    let finalScheduleId = Number(schedule_id);
+    let finalScheduleId = sid;
     let wasRescheduled = false;
 
-    if (booked >= capacity) {
-      const nextId = await findNextAvailableSchedule(
-        conn,
-        course_id,
-        schedule_id,
-      );
-
+    if (booked >= totalSlots) {
+      const nextId = await findNextAvailableSchedule(conn, cid, sid);
       if (!nextId) {
         await conn.rollback();
         return res.status(400).json({
@@ -665,20 +899,30 @@ exports.createWalkInReservation = async (req, res) => {
           message: "Fully booked. No next available schedule found.",
         });
       }
-
       finalScheduleId = nextId;
       wasRescheduled = true;
+    }
+
+    const conflict = await hasScheduleConflict(
+      conn,
+      studentId,
+      finalScheduleId,
+    );
+    if (conflict) {
+      await conn.rollback();
+      return res.status(400).json({
+        status: "error",
+        message: "Student already has another schedule at the same date/time",
+      });
     }
 
     const payMethod = payment_method
       ? String(payment_method).toUpperCase()
       : "CASH";
     const resStatus = auto_confirm ? "CONFIRMED" : "PENDING";
-    const paidNow = !!auto_confirm;
+    const scheduleDateYMD = toYMD(sched.schedule_date);
 
-    // ✅ compute fee
-    const fee = await resolveCourseFee(conn, course_id, fee_option_code);
-
+    const fee = await resolveCourseFee(conn, cid, fee_option_code);
     if (fee.error === "FEE_OPTION_REQUIRED") {
       await conn.rollback();
       return res.status(400).json({
@@ -687,7 +931,6 @@ exports.createWalkInReservation = async (req, res) => {
         options: fee.options,
       });
     }
-
     if (fee.error === "INVALID_FEE_OPTION") {
       await conn.rollback();
       return res.status(400).json({
@@ -697,52 +940,41 @@ exports.createWalkInReservation = async (req, res) => {
       });
     }
 
-    // insert reservation (using finalScheduleId)
     const [ins] = await conn.execute(
       `
       INSERT INTO schedule_reservations
-        (schedule_id, student_id, course_id, reservation_source, reservation_status, payment_method, notes, fee_option_code, created_by)
+        (schedule_id, student_id, course_id,
+         reservation_source, reservation_status,
+         payment_method, notes, fee_option_code,
+         requirements_mode,
+         expires_at,
+         created_by, created_at, updated_at)
       VALUES
-        (?, ?, ?, 'WALKIN', ?, ?, ?, ?, ?)
+        (?, ?, ?,
+         'WALKIN', ?,
+         ?, ?, ?,
+         'walkin',
+         TIMESTAMP(?, '23:59:59'),
+         ?, NOW(), NOW())
       `,
       [
         Number(finalScheduleId),
-        Number(student_id),
-        Number(course_id),
+        studentId,
+        cid,
         resStatus,
         payMethod,
         notes ?? null,
-        fee.chosenOption,
-        Number(encoderId),
+        fee.chosenOption ?? null,
+        scheduleDateYMD,
+        encoderId,
       ],
     );
 
     const reservationId = ins.insertId;
 
-    // ✅ FIXED: amount must be fee.amount (not payMethod)
-    await conn.execute(
-      `
-      INSERT INTO payments
-        (reservation_id, student_id, amount, method, payment_status, reference_no, official_receipt_no, paid_at, created_by)
-      VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        Number(reservationId),
-        Number(student_id),
-        fee.amount,
-        payMethod,
-        paidNow ? "PAID" : "UNPAID",
-        reference_no ?? null,
-        official_receipt_no ?? null,
-        paidNow ? new Date() : null,
-        Number(encoderId),
-      ],
-    );
-
     await conn.commit();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: "success",
       message: wasRescheduled
         ? `Walk-in reservation created (${resStatus}) and auto-rescheduled`
@@ -753,33 +985,148 @@ exports.createWalkInReservation = async (req, res) => {
         was_rescheduled: wasRescheduled,
         amount: fee.amount,
         fee_option_code: fee.chosenOption,
+        reference_no: reference_no ?? null,
+        official_receipt_no: official_receipt_no ?? null,
       },
     });
   } catch (err) {
-    await conn.rollback();
-
-    if (String(err.message || "").includes("uniq_student_schedule")) {
-      return res.status(400).json({
-        status: "error",
-        message: "Student already reserved this schedule",
-      });
-    }
-
+    try {
+      await conn.rollback();
+    } catch (_) {}
     console.error("createWalkInReservation error:", err);
-    res
-      .status(500)
-      .json({ status: "error", message: "Walk-in reservation failed" });
+    return res.status(500).json({
+      status: "error",
+      message: err.sqlMessage || err.message || "Walk-in reservation failed",
+    });
   } finally {
     conn.release();
   }
+};
 
-  const conflict = await hasScheduleConflict(conn, student_id, finalScheduleId);
+// ===================== ADMIN: RESERVATION DETAILS =====================
+// GET /api/admin/reservations/:reservationId/details
+exports.getReservationDetailsAdmin = async (req, res) => {
+  try {
+    const reservationId = Number(req.params?.reservationId);
+    if (!reservationId) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid reservationId" });
+    }
 
-  if (conflict) {
-    await conn.rollback();
-    return res.status(400).json({
+    // 1) reservation + student + schedule + course
+    const [rows] = await pool.execute(
+      `
+      SELECT
+        r.reservation_id,
+        r.reservation_status,
+        r.payment_method,
+        r.requirements_mode,
+        r.notes,
+        r.created_at,
+        r.updated_at,
+
+        r.student_id,
+        r.course_id,
+        r.schedule_id,
+
+        u.fullname AS student_name,
+        u.email,
+
+        COALESCE(c.course_name, '(unknown course)') AS course_name,
+
+        s.schedule_date AS schedule_date,
+        TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
+        TIME_FORMAT(s.end_time, '%H:%i') AS endTime
+      FROM schedule_reservations r
+      LEFT JOIN users u ON u.id = r.student_id
+      LEFT JOIN schedules s ON s.schedule_id = r.schedule_id
+      LEFT JOIN courses c ON c.id = COALESCE(s.course_id, r.course_id)
+      WHERE r.reservation_id = ?
+      LIMIT 1
+      `,
+      [reservationId],
+    );
+
+    if (!rows.length) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Reservation not found" });
+    }
+
+    const reservation = rows[0];
+
+    // 2) payment submission (student_payment_submissions)
+    const [payRows] = await pool.execute(
+      `
+      SELECT
+        sp.id,
+        sp.payment_ref,
+        sp.student_id,
+        sp.course_id,
+        sp.schedule_id,
+        sp.amount_centavos,
+        sp.currency,
+        sp.payment_method,
+        sp.status,
+        sp.proof_url,
+        sp.notes,
+        sp.admin_note,
+        sp.verified_by,
+        sp.verified_at,
+        sp.created_at,
+        sp.updated_at
+      FROM student_payment_submissions sp
+      WHERE sp.student_id = ?
+        AND sp.course_id = ?
+        AND sp.schedule_id = ?
+      ORDER BY sp.id DESC
+      LIMIT 1
+      `,
+      [
+        Number(reservation.student_id),
+        Number(reservation.course_id),
+        Number(reservation.schedule_id),
+      ],
+    );
+
+    const payment = payRows.length ? payRows[0] : null;
+
+    // 3) requirements uploaded (requirement_submissions + course_requirements)
+    const [reqRows] = await pool.execute(
+      `
+      SELECT
+        rs.submission_id,
+        rs.requirement_id,
+        rs.file_path AS file_url,
+        rs.created_at,
+        cr.requirement_text
+      FROM requirement_submissions rs
+      LEFT JOIN course_requirements cr ON cr.requirement_id = rs.requirement_id
+      WHERE rs.reservation_id = ?
+      ORDER BY rs.created_at DESC
+      `,
+      [reservationId],
+    );
+
+    const requirements = (reqRows || []).map((x) => ({
+      id: x.submission_id,
+      requirement_id: x.requirement_id,
+      requirement_text: x.requirement_text || null,
+      file_url: x.file_url,
+      created_at: x.created_at,
+    }));
+
+    return res.json({
+      status: "success",
+      data: { reservation, payment, requirements },
+    });
+  } catch (err) {
+    console.error("getReservationDetailsAdmin error:", err);
+    return res.status(500).json({
       status: "error",
-      message: "Student already has another schedule at the same date/time",
+      message:
+        err.sqlMessage || err.message || "Failed to load reservation details",
     });
   }
 };

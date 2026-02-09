@@ -30,56 +30,65 @@
         <div class="nav-actions">
           <div class="dropdown auth-dropdown">
             <button class="btn btn-outline dropdown-toggle">
-              <i class="fas fa-sign-in-alt"></i>
+              <font-awesome-icon icon="fas fa-sign-in-alt" />
               Login
             </button>
             <div class="dropdown-menu">
               <router-link to="/login?track=tesda" class="dropdown-item">
-                <i class="fas fa-graduation-cap"></i> TESDA Login
+                <font-awesome-icon icon="fas fa-graduation-cap" />
+                TESDA Login
               </router-link>
               <router-link to="/login?track=driving" class="dropdown-item">
-                <i class="fas fa-car"></i> Driving Course Login
+                <font-awesome-icon icon="fas fa-car" />
+                Driving Course Login
               </router-link>
             </div>
           </div>
           
           <div class="dropdown auth-dropdown">
             <button class="btn btn-primary dropdown-toggle">
-              <i class="fas fa-user-plus"></i>
+              <font-awesome-icon icon="fas fa-user-plus" />
               Get Started
             </button>
             <div class="dropdown-menu">
               <router-link to="/signup?track=tesda" class="dropdown-item">
-                <i class="fas fa-graduation-cap"></i> TESDA Sign Up
+                <font-awesome-icon icon="fas fa-graduation-cap" />
+                TESDA Sign Up
               </router-link>
               <router-link to="/signup?track=driving" class="dropdown-item">
-                <i class="fas fa-car"></i> Driving Course Sign Up
+                <font-awesome-icon icon="fas fa-car" />
+                Driving Course Sign Up
               </router-link>
             </div>
           </div>
         </div>
         
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
-          <i class="fas fa-bars"></i>
+          <font-awesome-icon icon="fas fa-bars" />
         </button>
       </div>
       
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="mobile-menu">
         <a href="#home" class="mobile-nav-link" @click="toggleMobileMenu">
-          <i class="fas fa-home"></i> Home
+          <font-awesome-icon icon="fas fa-home" />
+          Home
         </a>
         <a href="#programs" class="mobile-nav-link" @click="toggleMobileMenu">
-          <i class="fas fa-graduation-cap"></i> Programs
+          <font-awesome-icon icon="fas fa-graduation-cap" />
+          Programs
         </a>
         <a href="#features" class="mobile-nav-link" @click="toggleMobileMenu">
-          <i class="fas fa-star"></i> Features
+          <font-awesome-icon icon="fas fa-star" />
+          Features
         </a>
         <a href="#how-it-works" class="mobile-nav-link" @click="toggleMobileMenu">
-          <i class="fas fa-cogs"></i> How It Works
+          <font-awesome-icon icon="fas fa-cogs" />
+          How It Works
         </a>
         <a href="#faq" class="mobile-nav-link" @click="toggleMobileMenu">
-          <i class="fas fa-question-circle"></i> FAQ
+          <font-awesome-icon icon="fas fa-question-circle" />
+          FAQ
         </a>
         
         <!-- Mobile Authentication Options -->
@@ -87,11 +96,11 @@
           <h3 class="mobile-auth-title">TESDA Programs</h3>
           <div class="mobile-auth-actions">
             <router-link to="/login?track=tesda" class="btn btn-outline btn-small">
-              <i class="fas fa-sign-in-alt"></i>
+              <font-awesome-icon icon="fas fa-sign-in-alt" />
               TESDA Login
             </router-link>
             <router-link to="/signup?track=tesda" class="btn btn-primary btn-small">
-              <i class="fas fa-user-plus"></i>
+              <font-awesome-icon icon="fas fa-user-plus" />
               TESDA Sign Up
             </router-link>
           </div>
@@ -99,11 +108,11 @@
           <h3 class="mobile-auth-title">Driving Courses</h3>
           <div class="mobile-auth-actions">
             <router-link to="/login?track=driving" class="btn btn-outline btn-small">
-              <i class="fas fa-sign-in-alt"></i>
+              <font-awesome-icon icon="fas fa-sign-in-alt" />
               Driving Login
             </router-link>
             <router-link to="/signup?track=driving" class="btn btn-primary btn-small">
-              <i class="fas fa-user-plus"></i>
+              <font-awesome-icon icon="fas fa-user-plus" />
               Driving Sign Up
             </router-link>
           </div>
@@ -138,16 +147,16 @@
           <div class="quick-auth">
             <div class="quick-auth-group">
               <h3 class="quick-auth-title">
-                <i class="fas fa-graduation-cap"></i>
+                <font-awesome-icon icon="fas fa-graduation-cap" />
                 TESDA Programs
               </h3>
               <div class="quick-auth-actions">
                 <router-link to="/login?track=tesda" class="btn btn-outline btn-small">
-                  <i class="fas fa-sign-in-alt"></i>
+                  <font-awesome-icon icon="fas fa-sign-in-alt" />
                   Login
                 </router-link>
                 <router-link to="/signup?track=tesda" class="btn btn-primary btn-small">
-                  <i class="fas fa-user-plus"></i>
+                  <font-awesome-icon icon="fas fa-user-plus" />
                   Sign Up
                 </router-link>
               </div>
@@ -155,16 +164,16 @@
             
             <div class="quick-auth-group">
               <h3 class="quick-auth-title">
-                <i class="fas fa-car"></i>
+                <font-awesome-icon icon="fas fa-car" />
                 Driving Courses
               </h3>
               <div class="quick-auth-actions">
                 <router-link to="/login?track=driving" class="btn btn-outline btn-small">
-                  <i class="fas fa-sign-in-alt"></i>
+                  <font-awesome-icon icon="fas fa-sign-in-alt" />
                   Login
                 </router-link>
                 <router-link to="/signup?track=driving" class="btn btn-primary btn-small">
-                  <i class="fas fa-user-plus"></i>
+                  <font-awesome-icon icon="fas fa-user-plus" />
                   Sign Up
                 </router-link>
               </div>
@@ -216,7 +225,7 @@
               <div class="quick-stats">
                 <div class="stat-item">
                   <div class="stat-icon docs">
-                    <i class="fas fa-file-alt"></i>
+                    <font-awesome-icon icon="fas fa-file-alt" />
                   </div>
                   <div class="stat-info">
                     <div class="stat-value">3/5</div>
@@ -226,7 +235,7 @@
                 
                 <div class="stat-item">
                   <div class="stat-icon sessions">
-                    <i class="fas fa-calendar-check"></i>
+                    <font-awesome-icon icon="fas fa-calendar-check" />
                   </div>
                   <div class="stat-info">
                     <div class="stat-value">12</div>
@@ -236,7 +245,7 @@
                 
                 <div class="stat-item">
                   <div class="stat-icon exams">
-                    <i class="fas fa-file-signature"></i>
+                    <font-awesome-icon icon="fas fa-file-signature" />
                   </div>
                   <div class="stat-info">
                     <div class="stat-value">85%</div>
@@ -249,11 +258,11 @@
               <div class="recent-activity">
                 <div class="activity-title">Recent Activity</div>
                 <div class="activity-item">
-                  <i class="fas fa-check-circle"></i>
+                  <font-awesome-icon icon="fas fa-check-circle" />
                   <span>Document submitted - 2 hours ago</span>
                 </div>
                 <div class="activity-item">
-                  <i class="fas fa-calendar"></i>
+                  <font-awesome-icon icon="fas fa-calendar" />
                   <span>Next session: Tomorrow 9 AM</span>
                 </div>
               </div>
@@ -263,7 +272,7 @@
           <!-- Floating Feature Cards - Clean Design -->
           <div class="floating-card card-1">
             <div class="floating-icon">
-              <i class="fas fa-cloud-upload-alt"></i>
+              <font-awesome-icon icon="fas fa-cloud-upload-alt" />
             </div>
             <div class="floating-content">
               <h4>Easy Document Upload</h4>
@@ -273,7 +282,7 @@
           
           <div class="floating-card card-2">
             <div class="floating-icon">
-              <i class="fas fa-chart-line"></i>
+              <font-awesome-icon icon="fas fa-chart-line" />
             </div>
             <div class="floating-content">
               <h4>Progress Tracking</h4>
@@ -283,7 +292,7 @@
           
           <div class="floating-card card-3">
             <div class="floating-icon">
-              <i class="fas fa-certificate"></i>
+              <font-awesome-icon icon="fas fa-certificate" />
             </div>
             <div class="floating-content">
               <h4>Digital Certification</h4>
@@ -310,7 +319,7 @@
           <div class="program-card">
             <div class="program-header">
               <div class="program-icon tesda">
-                <i class="fas fa-graduation-cap"></i>
+                <font-awesome-icon icon="fas fa-graduation-cap" />
               </div>
               <div class="program-badge">
                 <span class="badge-text">Government Accredited</span>
@@ -323,10 +332,10 @@
             </p>
             
             <ul class="program-features">
-              <li><i class="fas fa-check-circle"></i> Nationally recognized certificates</li>
-              <li><i class="fas fa-check-circle"></i> Industry-standard training</li>
-              <li><i class="fas fa-check-circle"></i> Employment assistance</li>
-              <li><i class="fas fa-check-circle"></i> Scholarship opportunities</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Nationally recognized certificates</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Industry-standard training</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Employment assistance</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Scholarship opportunities</li>
             </ul>
             
             <!-- TESDA Authentication -->
@@ -334,11 +343,11 @@
               <h4 class="auth-title">Get Started with TESDA</h4>
               <div class="auth-actions">
                 <router-link to="/login?track=tesda" class="btn btn-outline btn-small">
-                  <i class="fas fa-sign-in-alt"></i>
+                  <font-awesome-icon icon="fas fa-sign-in-alt" />
                   TESDA Login
                 </router-link>
                 <router-link to="/signup?track=tesda" class="btn btn-primary btn-small">
-                  <i class="fas fa-user-plus"></i>
+                  <font-awesome-icon icon="fas fa-user-plus" />
                   TESDA Sign Up
                 </router-link>
               </div>
@@ -346,11 +355,11 @@
             
             <div class="program-actions">
               <router-link to="/programs/tesda" class="btn btn-primary">
-                <i class="fas fa-list"></i>
+                <font-awesome-icon icon="fas fa-list" />
                 View Courses
               </router-link>
               <a href="#" class="btn-link">
-                <i class="fas fa-info-circle"></i>
+                <font-awesome-icon icon="fas fa-info-circle" />
                 Learn More
               </a>
             </div>
@@ -362,7 +371,7 @@
             
             <div class="program-header">
               <div class="program-icon driving">
-                <i class="fas fa-car"></i>
+                <font-awesome-icon icon="fas fa-car" />
               </div>
               <div class="program-badge">
                 <span class="badge-text">LTO Accredited</span>
@@ -375,10 +384,10 @@
             </p>
             
             <ul class="program-features">
-              <li><i class="fas fa-check-circle"></i> Professional instructors</li>
-              <li><i class="fas fa-check-circle"></i> Modern training vehicles</li>
-              <li><i class="fas fa-check-circle"></i> LTO-accredited certificates</li>
-              <li><i class="fas fa-check-circle"></i> Flexible schedules</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Professional instructors</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Modern training vehicles</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> LTO-accredited certificates</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Flexible schedules</li>
             </ul>
             
             <!-- Driving Course Authentication -->
@@ -386,11 +395,11 @@
               <h4 class="auth-title">Start Driving Course</h4>
               <div class="auth-actions">
                 <router-link to="/login?track=driving" class="btn btn-outline btn-small">
-                  <i class="fas fa-sign-in-alt"></i>
+                  <font-awesome-icon icon="fas fa-sign-in-alt" />
                   Driving Login
                 </router-link>
                 <router-link to="/signup?track=driving" class="btn btn-primary btn-small">
-                  <i class="fas fa-user-plus"></i>
+                  <font-awesome-icon icon="fas fa-user-plus" />
                   Driving Sign Up
                 </router-link>
               </div>
@@ -398,11 +407,11 @@
             
             <div class="program-actions">
               <router-link to="/programs/driving" class="btn btn-primary">
-                <i class="fas fa-list"></i>
+                <font-awesome-icon icon="fas fa-list" />
                 View Courses
               </router-link>
               <a href="#" class="btn-link">
-                <i class="fas fa-info-circle"></i>
+                <font-awesome-icon icon="fas fa-info-circle" />
                 Learn More
               </a>
             </div>
@@ -412,7 +421,7 @@
           <div class="program-card">
             <div class="program-header">
               <div class="program-icon corporate">
-                <i class="fas fa-briefcase"></i>
+                <font-awesome-icon icon="fas fa-briefcase" />
               </div>
               <div class="program-badge">
                 <span class="badge-text">Group Discounts</span>
@@ -425,19 +434,19 @@
             </p>
             
             <ul class="program-features">
-              <li><i class="fas fa-check-circle"></i> Customized curriculum</li>
-              <li><i class="fas fa-check-circle"></i> Flexible scheduling</li>
-              <li><i class="fas fa-check-circle"></i> Group discounts</li>
-              <li><i class="fas fa-check-circle"></i> On-site training</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Customized curriculum</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Flexible scheduling</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> Group discounts</li>
+              <li><font-awesome-icon icon="fas fa-check-circle" /> On-site training</li>
             </ul>
             
             <div class="program-actions">
               <router-link to="/contact" class="btn btn-primary">
-                <i class="fas fa-phone-alt"></i>
+                <font-awesome-icon icon="fas fa-phone-alt" />
                 Contact Us
               </router-link>
               <a href="#" class="btn-link">
-                <i class="fas fa-info-circle"></i>
+                <font-awesome-icon icon="fas fa-info-circle" />
                 Learn More
               </a>
             </div>
@@ -460,7 +469,7 @@
         <div class="features-grid">
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-file-upload"></i>
+              <font-awesome-icon icon="fas fa-file-upload" />
             </div>
             <h3>Document Upload</h3>
             <p>Securely upload and manage all your requirements in one place with real-time validation.</p>
@@ -468,7 +477,7 @@
           
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-calendar-alt"></i>
+              <font-awesome-icon icon="fas fa-calendar-alt" />
             </div>
             <h3>Schedule Management</h3>
             <p>View and manage your training schedules, set reminders, and never miss a session.</p>
@@ -476,7 +485,7 @@
           
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-chart-bar"></i>
+              <font-awesome-icon icon="fas fa-chart-bar" />
             </div>
             <h3>Progress Tracking</h3>
             <p>Monitor your progress with detailed analytics and performance reports.</p>
@@ -484,7 +493,7 @@
           
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-file-signature"></i>
+              <font-awesome-icon icon="fas fa-file-signature" />
             </div>
             <h3>Mock Exams</h3>
             <p>Practice with simulated exams to prepare for your actual assessments.</p>
@@ -492,7 +501,7 @@
           
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-clipboard-check"></i>
+              <font-awesome-icon icon="fas fa-clipboard-check" />
             </div>
             <h3>Attendance System</h3>
             <p>Digital attendance tracking with QR code check-ins for accurate records.</p>
@@ -500,7 +509,7 @@
           
           <div class="feature-item">
             <div class="feature-icon">
-              <i class="fas fa-certificate"></i>
+              <font-awesome-icon icon="fas fa-certificate" />
             </div>
             <h3>Certificate Generation</h3>
             <p>Automatically generate and download certificates upon course completion.</p>
@@ -524,7 +533,7 @@
           <div class="step">
             <div class="step-number">01</div>
             <div class="step-icon">
-              <i class="fas fa-user-plus"></i>
+              <font-awesome-icon icon="fas fa-user-plus" />
             </div>
             <h3>Register Account</h3>
             <p>Create your account and choose your desired program</p>
@@ -535,7 +544,7 @@
           <div class="step">
             <div class="step-number">02</div>
             <div class="step-icon">
-              <i class="fas fa-upload"></i>
+              <font-awesome-icon icon="fas fa-upload" />
             </div>
             <h3>Upload Documents</h3>
             <p>Submit required documents for verification</p>
@@ -546,7 +555,7 @@
           <div class="step">
             <div class="step-number">03</div>
             <div class="step-icon">
-              <i class="fas fa-calendar-check"></i>
+              <font-awesome-icon icon="fas fa-calendar-check" />
             </div>
             <h3>Attend Sessions</h3>
             <p>Follow your schedule and attend training sessions</p>
@@ -557,7 +566,7 @@
           <div class="step">
             <div class="step-number">04</div>
             <div class="step-icon">
-              <i class="fas fa-award"></i>
+              <font-awesome-icon icon="fas fa-award" />
             </div>
             <h3>Get Certified</h3>
             <p>Complete requirements and receive your certificate</p>
@@ -589,20 +598,22 @@
           <div class="cta-actions">
             <div class="dropdown auth-dropdown">
               <button class="btn btn-primary btn-large dropdown-toggle">
-                <i class="fas fa-user-plus"></i>
+                <font-awesome-icon icon="fas fa-user-plus" />
                 Create Free Account
               </button>
               <div class="dropdown-menu">
                 <router-link to="/signup?track=tesda" class="dropdown-item">
-                  <i class="fas fa-graduation-cap"></i> TESDA Account
+                  <font-awesome-icon icon="fas fa-graduation-cap" />
+                  TESDA Account
                 </router-link>
                 <router-link to="/signup?track=driving" class="dropdown-item">
-                  <i class="fas fa-car"></i> Driving Course Account
+                  <font-awesome-icon icon="fas fa-car" />
+                  Driving Course Account
                 </router-link>
               </div>
             </div>
             <a href="tel:+1234567890" class="btn btn-outline btn-large">
-              <i class="fas fa-phone-alt"></i>
+              <font-awesome-icon icon="fas fa-phone-alt" />
               Call for Assistance
             </a>
           </div>
@@ -628,10 +639,10 @@
               Transforming education through technology, providing seamless enrollment and training experiences.
             </p>
             <div class="social-links">
-              <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-              <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-              <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-              <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+              <a href="#" class="social-link"><font-awesome-icon :icon="['fab', 'facebook-f']" /></a>
+              <a href="#" class="social-link"><font-awesome-icon :icon="['fab', 'twitter']" /></a>
+              <a href="#" class="social-link"><font-awesome-icon :icon="['fab', 'instagram']" /></a>
+              <a href="#" class="social-link"><font-awesome-icon :icon="['fab', 'youtube']" /></a>
             </div>
           </div>
           
@@ -647,32 +658,32 @@
             <div class="footer-column">
               <h3>Program Access</h3>
               <a href="/login?track=tesda">
-                <i class="fas fa-graduation-cap"></i> TESDA Login
+                <font-awesome-icon icon="fas fa-graduation-cap" /> TESDA Login
               </a>
               <a href="/login?track=driving">
-                <i class="fas fa-car"></i> Driving Course Login
+                <font-awesome-icon icon="fas fa-car" /> Driving Course Login
               </a>
               <a href="/signup?track=tesda">
-                <i class="fas fa-user-plus"></i> TESDA Sign Up
+                <font-awesome-icon icon="fas fa-user-plus" /> TESDA Sign Up
               </a>
               <a href="/signup?track=driving">
-                <i class="fas fa-user-plus"></i> Driving Sign Up
+                <font-awesome-icon icon="fas fa-user-plus" /> Driving Sign Up
               </a>
             </div>
             
             <div class="footer-column">
               <h3>Contact</h3>
               <a href="tel:+1234567890">
-                <i class="fas fa-phone"></i> (123) 456-7890
+                <font-awesome-icon icon="fas fa-phone" /> (123) 456-7890
               </a>
               <a href="mailto:info@efacet.com">
-                <i class="fas fa-envelope"></i> info@efacet.com
+                <font-awesome-icon icon="fas fa-envelope" /> info@efacet.com
               </a>
               <a href="#">
-                <i class="fas fa-map-marker-alt"></i> Training Center
+                <font-awesome-icon icon="fas fa-map-marker-alt" /> Training Center
               </a>
               <a href="#">
-                <i class="fas fa-clock"></i> Mon-Fri, 8AM-5PM
+                <font-awesome-icon icon="fas fa-clock" /> Mon-Fri, 8AM-5PM
               </a>
             </div>
           </div>
@@ -697,11 +708,6 @@ export default {
     return {
       mobileMenuOpen: false,
       currentYear: new Date().getFullYear()
-    }
-  },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
     }
   },
   mounted() {
@@ -957,7 +963,7 @@ export default {
   border-left-color: #10b981;
 }
 
-.dropdown-item i {
+.dropdown-item font-awesome-icon {
   width: 20px;
   text-align: center;
   color: #10b981;
@@ -1040,7 +1046,7 @@ export default {
   color: #059669;
 }
 
-.mobile-nav-link i {
+.mobile-nav-link font-awesome-icon {
   width: 20px;
   text-align: center;
 }
@@ -1165,7 +1171,7 @@ export default {
   font-weight: 600;
 }
 
-.quick-auth-title i {
+.quick-auth-title font-awesome-icon {
   color: #10b981;
 }
 
@@ -1378,7 +1384,7 @@ export default {
   margin-bottom: 0.5rem;
 }
 
-.activity-item i {
+.activity-item font-awesome-icon {
   color: #10b981;
   font-size: 0.75rem;
 }
@@ -1642,7 +1648,7 @@ export default {
   font-size: 0.95rem;
 }
 
-.program-features i {
+.program-features font-awesome-icon {
   color: #10b981;
   margin-top: 0.2rem;
   flex-shrink: 0;
@@ -1807,7 +1813,7 @@ export default {
 
 .step-line {
   position: absolute;
-  top: 40px;
+  top: 1px;
   left: 25%;
   right: 25%;
   height: 2px;

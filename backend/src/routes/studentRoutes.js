@@ -14,11 +14,12 @@ const enrollmentAppController = require("../controllers/enrollmentApplicationCon
 const studentScheduleController = require("../controllers/studentScheduleController");
 const studentReservationController = require("../controllers/studentReservationController");
 const studentMyScheduleController = require("../controllers/studentMyScheduleController");
+
+// legacy gcash checkout (optional)
 const studentPaymentsController = require("../controllers/studentPaymentsController");
 
-const uploadPaymentProof = require("../middlewares/uploadPaymentProof");
+// QRPH
 const studentQrphPaymentsController = require("../controllers/studentQrphPaymentsController");
-
 const uploadSingleProof = require("../middlewares/uploadPaymentProof");
 
 // ================= MIDDLEWARE =================
@@ -36,12 +37,6 @@ function requireUserRole(req, res) {
   }
   return true;
 }
-
-// (Debug) make sure controller functions exist
-console.log(
-  "studentPaymentsController keys:",
-  Object.keys(studentPaymentsController),
-);
 
 // ================= STUDENT DASHBOARD =================
 router.get("/dashboard", async (req, res) => {
@@ -172,6 +167,11 @@ router.get("/reservations", (req, res) => {
   return studentReservationController.listMyReservations(req, res);
 });
 
+router.get("/reservations/active", (req, res) => {
+  if (!requireUserRole(req, res)) return;
+  return studentReservationController.getMyActiveReservation(req, res);
+});
+
 router.delete("/reservations/:reservationId", (req, res) => {
   if (!requireUserRole(req, res)) return;
   return studentReservationController.cancelMyReservation(req, res);
@@ -204,12 +204,7 @@ router.get("/applications", (req, res) => {
   return enrollmentAppController.getMyApplications(req, res);
 });
 
-// ================= PAYMENTS (GCash) =================
-// NOTE: Since studentRoutes is mounted at /api/student,
-// these become:
-// POST http://localhost:3000/api/student/payments/gcash/checkout
-// POST http://localhost:3000/api/student/payments/gcash/finalize
-
+// ================= PAYMENTS (legacy gcash checkout) OPTIONAL =================
 router.post("/payments/gcash/checkout", (req, res) => {
   if (!requireUserRole(req, res)) return;
   return studentPaymentsController.createGcashCheckout(req, res);
@@ -220,17 +215,18 @@ router.post("/payments/gcash/finalize", (req, res) => {
   return studentPaymentsController.finalizeGcashPayment(req, res);
 });
 
-
 // ================= PAYMENTS (QRPH / GCash QR) =================
-// create payment ref (tied to reservation)
-router.post("/payments/qrph/create", (req, res) =>
-  studentQrphPaymentsController.createQrphPayment(req, res),
-);
+router.post("/payments/qrph/create", (req, res) => {
+  if (!requireUserRole(req, res)) return;
+  return studentQrphPaymentsController.createQrphPayment(req, res);
+});
 
-
-// upload proof
 router.post(
   "/payments/qrph/:paymentRef/proof",
+  (req, res, next) => {
+    if (!requireUserRole(req, res)) return;
+    next();
+  },
   uploadSingleProof.single("proof"),
   (req, res) => studentQrphPaymentsController.uploadQrphProof(req, res),
 );
