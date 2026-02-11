@@ -1,5 +1,6 @@
 <template>
   <StudentLayoutTesda active-page="enrollment">
+    <!-- Header Slot -->
     <template #header-left>
       <input
         type="text"
@@ -9,39 +10,46 @@
       />
     </template>
 
+    <template #header-right>
+      <div class="flex items-center gap-4">
+        <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+          <span class="text-xl">🔔</span>
+        </button>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center text-xl font-bold">
+          {{ getUserInitial() }}
+        </div>
+      </div>
+    </template>
+
     <div>
       <h1 class="text-3xl font-bold text-gray-800 mb-6">Training Enrollment</h1>
 
-      <!-- Tabs -->
+      <!-- Tabs (Reservation removed) -->
       <div class="flex space-x-2 mb-6">
         <button
-          @click="activeTab = 'requirements'"
+          @click="activeTab = 'trainings'"
           :class="[
             'px-4 py-2 rounded-md font-medium transition-colors',
-            activeTab === 'requirements'
-              ? 'bg-blue-700 text-white'
-              : 'bg-gray-300 hover:bg-gray-400'
+            activeTab === 'trainings' ? 'bg-blue-700 text-white' : 'bg-gray-300 hover:bg-gray-400'
           ]"
         >
-          📋 Requirements
+          📋 Available Trainings
         </button>
 
         <button
-          @click="activeTab = 'reservation'"
+          @click="activeTab = 'upload'"
           :class="[
             'px-4 py-2 rounded-md font-medium transition-colors',
-            activeTab === 'reservation'
-              ? 'bg-blue-700 text-white'
-              : 'bg-gray-300 hover:bg-gray-400'
+            activeTab === 'upload' ? 'bg-blue-700 text-white' : 'bg-gray-300 hover:bg-gray-400'
           ]"
         >
-          📅 Enrollment Reservation
+          📎 Requirements Upload
         </button>
       </div>
 
-      <!-- REQUIREMENTS SECTION -->
+      <!-- ✅ TRAININGS LIST -->
       <section
-        v-if="activeTab === 'requirements'"
+        v-if="activeTab === 'trainings'"
         class="bg-white p-6 rounded-xl shadow border border-gray-200"
       >
         <h2 class="bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">
@@ -63,9 +71,7 @@
                 <h3 class="text-xl font-bold text-blue-800 mb-2">
                   {{ course.course_name }} ({{ course.course_code }})
                 </h3>
-                <p class="text-gray-700">
-                  {{ course.description || "—" }}
-                </p>
+                <p class="text-gray-700">{{ course.description || "—" }}</p>
               </div>
 
               <span class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -75,14 +81,12 @@
 
             <!-- Requirements Toggle Button -->
             <button
-              @click="toggleRequirements(course)"
+              @click="toggleRequirements(course.id)"
               class="w-full flex items-center justify-between text-blue-700 font-medium hover:text-blue-800 transition-colors mb-3 px-3 py-2 bg-blue-50 rounded-lg hover:bg-blue-100"
             >
               <div class="flex items-center gap-2">
                 <span>📋</span>
-                <span>
-                  {{ showReqMap[course.id] ? "Hide Requirements" : "View Requirements" }}
-                </span>
+                <span>{{ showReqMap[course.id] ? "Hide Requirements" : "View Requirements" }}</span>
               </div>
 
               <span
@@ -93,9 +97,9 @@
               </span>
             </button>
 
-            <!-- Requirements List -->
+            <!-- Requirements List (uses course.requirements directly) -->
             <div
-              class="overflow-hidden transition-all duration-300 ease-in-out"
+              class="overflow-hidden transition-all duration-300 ease-in-out border-gray-200"
               :style="{
                 maxHeight: showReqMap[course.id] ? '220px' : '0px',
                 marginTop: showReqMap[course.id] ? '0.75rem' : '0',
@@ -106,21 +110,17 @@
               <div v-if="showReqMap[course.id]">
                 <h4 class="font-semibold text-gray-800 mb-2">Requirements:</h4>
 
-                <div v-if="loadingReqMap[course.id]" class="text-sm text-gray-500">
-                  Loading requirements...
-                </div>
-
                 <ul
-                  v-else-if="(requirementsMap[course.id] || []).length"
+                  v-if="Array.isArray(course.requirements) && course.requirements.length"
                   class="space-y-1.5 text-sm text-gray-700"
                 >
                   <li
-                    v-for="r in requirementsMap[course.id]"
-                    :key="r.requirement_id"
+                    v-for="(req, idx) in course.requirements"
+                    :key="idx"
                     class="flex items-start gap-2"
                   >
                     <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    {{ r.requirement_text }}
+                    {{ req }}
                   </li>
                 </ul>
 
@@ -143,12 +143,12 @@
               </div>
             </div>
 
-            <!-- Action Button -->
+            <!-- Action Button: proceed to upload (no reservation) -->
             <button
-              @click="enrollCourse(course)"
+              @click="selectCourseForUpload(course)"
               class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Enroll
+              Proceed to Upload Requirements
             </button>
           </div>
 
@@ -158,226 +158,156 @@
         </div>
       </section>
 
-      <!-- RESERVATION SECTION -->
+      <!-- ✅ REQUIREMENTS UPLOAD (Reservation removed, waiting flow) -->
       <section
-        v-if="activeTab === 'reservation'"
+        v-if="activeTab === 'upload'"
         class="bg-white p-6 rounded-xl shadow border border-gray-200"
       >
         <h2 class="bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg mb-6 inline-block">
-          Reserve a Slot
+          Requirements Upload
         </h2>
 
-        <!-- Training filter affects calendar -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Select Training</label>
-          <select
-            v-model="reservationForm.course"
-            @change="onCourseChange"
-            class="w-full md:w-1/2 border-2 border-blue-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-700 transition-colors"
-            required
-          >
-            <option value="" disabled>Select a training</option>
-            <option v-for="c in courses" :key="c.id" :value="String(c.id)">
-              {{ c.course_name }} ({{ c.course_code }})
-            </option>
-          </select>
+        <!-- selected course banner -->
+        <div class="mb-6 p-4 rounded-xl border border-blue-200 bg-blue-50">
+          <div class="font-semibold text-blue-900">
+            {{ selectedCourse ? `Selected Training: ${selectedCourse.course_name} (${selectedCourse.course_code})` : "No training selected yet." }}
+          </div>
+          <div class="text-sm text-blue-800 mt-1">
+            After submitting your documents, please wait for a call/message from the admin for verification and schedule instructions.
+          </div>
         </div>
 
-        <!-- Calendar -->
-        <div class="border-2 border-blue-700 rounded-xl p-6 mb-8">
-          <div class="flex justify-between items-center mb-6">
-            <button
-              @click="previousMonth"
-              class="p-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
-            >
-              ◀ Previous
-            </button>
-            <h3 class="text-xl font-bold text-blue-800">{{ currentMonth }} {{ currentYear }}</h3>
-            <button
-              @click="nextMonth"
-              class="p-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
-            >
-              Next ▶
-            </button>
-          </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Requirements List -->
+          <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="text-blue-600">📋</span>
+              Required Documents
+            </h3>
 
-          <div class="grid grid-cols-7 gap-2">
-            <div v-for="day in daysOfWeek" :key="day" class="text-center font-medium text-gray-700 py-2">
-              {{ day }}
+            <div v-if="!selectedCourse" class="text-gray-600">
+              Please pick a training first from “Available Trainings”.
             </div>
 
-            <div
-              v-for="day in calendarDays"
-              :key="day.key"
-              :class="[
-                'p-3 text-center rounded-lg border transition-all cursor-pointer',
-                day.isCurrentMonth
-                  ? day.available
-                    ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
-                    : day.available === false && day.slots === 0
-                      ? 'border-red-200 bg-red-50 hover:bg-red-100'
-                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                  : 'border-gray-200 bg-gray-50 text-gray-400',
-                day.isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-              ]"
-              @click="selectDate(day)"
-            >
-              <div class="font-medium">{{ day.day }}</div>
-
-              <div v-if="day.isCurrentMonth && day.available && day.slots > 0" class="text-xs mt-1 text-blue-700">
-                {{ day.slots }} slot{{ day.slots !== 1 ? "s" : "" }}
-              </div>
-
+            <div v-else class="space-y-3">
               <div
-                v-else-if="day.isCurrentMonth && day.available === false && day.slots === 0"
-                class="text-xs mt-1 text-red-600"
+                v-for="(req, idx) in normalizedSelectedRequirements"
+                :key="idx"
+                class="border-2 border-blue-200 rounded-lg p-4 bg-blue-50 hover:bg-blue-100 transition-colors"
               >
-                Full
+                <div class="flex items-start justify-between mb-2">
+                  <div>
+                    <h4 class="font-semibold text-gray-800">{{ req }}</h4>
+                    <p class="text-xs text-gray-500 mt-1">File types: PDF, JPG, PNG | Max size: 5MB</p>
+                  </div>
+                  <span class="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                    Required
+                  </span>
+                </div>
               </div>
 
-              <div v-else-if="day.isCurrentMonth && day.available === null" class="text-xs mt-1 text-gray-500">
-                -
+              <p v-if="!normalizedSelectedRequirements.length" class="text-sm text-gray-500">
+                — No requirements listed for this training.
+              </p>
+            </div>
+          </div>
+
+          <!-- Upload Section -->
+          <div class="bg-white p-6 rounded-xl border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span class="text-blue-600">📎</span>
+              Upload Documents
+            </h3>
+
+            <!-- Upload Area -->
+            <label
+              class="block border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              <input
+                type="file"
+                class="hidden"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png"
+                @change="onFilesPicked"
+              />
+              <div class="text-blue-600 text-4xl mb-4">📎</div>
+              <h4 class="font-semibold text-gray-800 mb-2">Drop files here</h4>
+              <p class="text-sm text-gray-600 mb-2">or click to browse</p>
+              <p class="text-xs text-gray-500">Supports: PDF, JPG, PNG (Max 5MB each)</p>
+            </label>
+
+            <!-- Selected Files -->
+            <div class="mt-6">
+              <h4 class="font-semibold text-gray-700 mb-3">
+                Selected Files ({{ selectedFiles.length }})
+              </h4>
+
+              <div v-if="!selectedFiles.length" class="text-center text-gray-500 py-4 border border-dashed border-gray-300 rounded-lg">
+                No files selected
               </div>
+
+              <ul v-else class="space-y-2">
+                <li
+                  v-for="(f, idx) in selectedFiles"
+                  :key="idx"
+                  class="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50"
+                >
+                  <div class="text-sm text-gray-800">
+                    <span class="font-medium">{{ f.name }}</span>
+                    <span class="text-gray-500 ml-2">({{ formatBytes(f.size) }})</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    @click="removeFile(idx)"
+                  >
+                    Remove
+                  </button>
+                </li>
+              </ul>
             </div>
-          </div>
 
-          <div class="flex justify-center gap-4 mt-6 text-sm">
-            <div class="flex items-center gap-2">
-              <div class="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-              <span class="text-gray-700">Available</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-              <span class="text-gray-700">Full</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
-              <span class="text-gray-700">Not Available</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Available time schedules list -->
-        <div v-if="selectedDate && selectedDate.isCurrentMonth" class="mb-8">
-          <h3 class="text-lg font-bold text-gray-800 mb-3">
-            Available Time Slots for {{ formatSelectedDate(selectedDate) }}
-          </h3>
-
-          <div v-if="!reservationForm.course" class="text-gray-600">
-            Please select a training first.
-          </div>
-
-          <div v-else-if="loadingAvailability" class="text-gray-600">
-            Loading time slots...
-          </div>
-
-          <div v-else-if="availableSchedules.length === 0" class="text-gray-600">
-            No available schedules for this date.
-          </div>
-
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
-              v-for="s in availableSchedules"
-              :key="s.schedule_id"
+              class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              :disabled="!canSubmitUploads"
+              :class="!canSubmitUploads ? 'opacity-60 cursor-not-allowed' : ''"
+              @click="submitDocuments"
               type="button"
-              @click="pickSchedule(s)"
-              :class="[
-                'p-3 border rounded-lg text-left transition-colors',
-                reservationForm.schedule_id === String(s.schedule_id)
-                  ? 'border-blue-700 bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              ]"
             >
-              <div class="font-semibold text-gray-800">
-                {{ s.startTime }} - {{ s.endTime }}
-              </div>
-              <div class="text-sm text-gray-600">
-                Trainer: {{ s.instructor }}
-              </div>
-              <div class="text-sm" :class="Number(s.availableSlots) > 0 ? 'text-blue-700' : 'text-red-600'">
-                {{ s.availableSlots }} / {{ s.totalSlots }} slots available
-              </div>
-
-              <!-- optional: show 2-day info if backend returns it -->
-              <div v-if="s.schedule_group_id" class="text-xs text-gray-500 mt-1">
-                2-day package
-              </div>
+              {{ submitting ? "Submitting..." : "Submit Documents" }}
             </button>
+
+            <p class="text-xs text-gray-500 mt-3">
+              Note: This button is wired as UI-only. Connect it to your upload API when ready.
+            </p>
           </div>
         </div>
 
-        <!-- Reservation Form -->
-        <form @submit.prevent="submitReservation" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Selected Date -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Selected Date</label>
-              <div class="border-2 border-blue-700 rounded-lg p-3 bg-blue-50">
-                <div class="font-medium text-blue-800">
-                  {{ selectedDate ? formatSelectedDate(selectedDate) : "No date selected" }}
-                </div>
-                <div v-if="selectedDate" class="text-sm text-blue-600 mt-1">
-                  {{ selectedDate.available ? selectedDate.slots + " slot(s) available" : "No slots available" }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Payment Method -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-              <select
-                v-model="reservationForm.paymentMethod"
-                class="w-full border-2 border-blue-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-700 transition-colors"
-                required
-              >
-                <option value="" disabled>Select payment method</option>
-                <option value="gcash">GCash</option>
-                <option value="bank">Bank Transfer</option>
-                <option value="cash">Cash On-site</option>
-              </select>
-            </div>
-
-            <!-- Picked Schedule ID -->
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Selected Schedule</label>
-              <div class="border rounded-lg p-3 bg-gray-50 border-gray-200">
-                <div class="text-sm text-gray-700">
-                  {{
-                    reservationForm.schedule_id
-                      ? `Schedule #${reservationForm.schedule_id} selected`
-                      : "No schedule selected (pick a time slot above)"
-                  }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes (Optional)</label>
-            <textarea
-              v-model="reservationForm.notes"
-              rows="3"
-              placeholder="Any special requests or notes..."
-              class="w-full border-2 border-blue-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-700 transition-colors"
-            ></textarea>
-          </div>
-
-          <div class="pt-4">
-            <button
-              type="submit"
-              :disabled="!canSubmitReservation"
-              :class="[
-                'w-full py-3 rounded-lg font-medium transition-colors',
-                canSubmitReservation
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              ]"
-            >
-              {{ isSubmitting ? "Processing..." : "Reserve Slot" }}
-            </button>
-          </div>
-        </form>
+        <!-- Instructions -->
+        <div class="mt-8 bg-white p-6 rounded-xl border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-blue-500">ℹ️</span>
+            Upload Instructions
+          </h3>
+          <ul class="space-y-2 text-gray-700">
+            <li class="flex items-start gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+              Ensure all documents are clear and readable
+            </li>
+            <li class="flex items-start gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+              File names should indicate the document type (e.g., "valid_id_passport.jpg")
+            </li>
+            <li class="flex items-start gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+              Uploaded documents will be reviewed by the admin
+            </li>
+            <li class="flex items-start gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+              Wait for a call/message after submission for next steps
+            </li>
+          </ul>
+        </div>
       </section>
     </div>
   </StudentLayoutTesda>
@@ -392,37 +322,24 @@ export default {
 
   data() {
     return {
+      // UI
       searchQuery: "",
-      activeTab: "requirements",
+      activeTab: "trainings",
 
+      // user
+      studentName: "Student",
+
+      // courses
       courses: [],
       loadingCourses: false,
 
-      requirementsMap: {},
+      // requirement toggle per course id
       showReqMap: {},
-      loadingReqMap: {},
 
-      // calendar
-      currentDate: new Date(),
-      selectedDate: null,
-
-      // month schedule map
-      scheduleMap: {},
-      loadingMonth: false,
-
-      // availability (time schedules list)
-      availableSchedules: [],
-      loadingAvailability: false,
-
-      isSubmitting: false,
-      reservationForm: {
-        course: "",
-        schedule_id: "",
-        paymentMethod: "",
-        notes: "",
-      },
-
-      daysOfWeek: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      // upload flow
+      selectedCourse: null,
+      selectedFiles: [],
+      submitting: false,
     };
   },
 
@@ -441,227 +358,114 @@ export default {
       });
     },
 
-    currentMonth() {
-      return this.currentDate.toLocaleString("default", { month: "long" });
+    normalizedSelectedRequirements() {
+      const reqs = this.selectedCourse?.requirements;
+      if (Array.isArray(reqs)) return reqs.filter(Boolean).map(String);
+      return [];
     },
 
-    currentYear() {
-      return this.currentDate.getFullYear();
-    },
-
-    calendarDays() {
-      // Calendar logic - returns array of day objects
-      const year = this.currentDate.getFullYear();
-      const month = this.currentDate.getMonth();
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      const startDay = firstDay.getDay();
-
-      const days = [];
-
-      // previous month fillers
-      for (let i = startDay - 1; i >= 0; i--) {
-        const d = new Date(year, month, -i);
-        const dateString = this.toLocalYMD(d);
-        days.push({
-          key: `prev-${dateString}`,
-          date: dateString,
-          day: d.getDate(),
-          isCurrentMonth: false,
-          available: false,
-          slots: 0,
-          isSelected: this.selectedDate?.date === dateString,
-        });
-      }
-
-      // current month days
-      for (let day = 1; day <= daysInMonth; day++) {
-        const d = new Date(year, month, day);
-        const dateString = this.toLocalYMD(d);
-
-        const info = this.scheduleMap[dateString];
-        const slots = info ? Number(info.availableSlots || 0) : 0;
-        const available = info ? slots > 0 : null;
-
-        days.push({
-          key: `cur-${dateString}`,
-          date: dateString,
-          day,
-          isCurrentMonth: true,
-          available,
-          slots,
-          isSelected: this.selectedDate?.date === dateString,
-        });
-      }
-
-      // next month fillers
-      const totalCells = 42;
-      const remainingCells = totalCells - days.length;
-
-      for (let i = 1; i <= remainingCells; i++) {
-        const d = new Date(year, month + 1, i);
-        const dateString = this.toLocalYMD(d);
-        days.push({
-          key: `next-${dateString}`,
-          date: dateString,
-          day: d.getDate(),
-          isCurrentMonth: false,
-          available: false,
-          slots: 0,
-          isSelected: this.selectedDate?.date === dateString,
-        });
-      }
-
-      return days;
-    },
-
-    canSubmitReservation() {
-      return (
-        this.reservationForm.course &&
-        this.reservationForm.schedule_id &&
-        this.reservationForm.paymentMethod &&
-        this.selectedDate &&
-        this.selectedDate.available === true &&
-        this.selectedDate.slots > 0 &&
-        !this.isSubmitting
-      );
+    canSubmitUploads() {
+      return !!this.selectedCourse && this.selectedFiles.length > 0 && !this.submitting;
     },
   },
 
   methods: {
-    toLocalYMD(dateLike) {
-      const d = new Date(dateLike);
-      if (Number.isNaN(d.getTime())) return "";
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    },
+async fetchCourses() {
+  this.loadingCourses = true;
+  try {
+    const res = await fetch("http://localhost:3000/api/tesda/courses");
+    const json = await res.json();
 
-    async fetchCourses() {
-      // To be implemented with API call
-      this.loadingCourses = true;
-      // API call here
-      this.loadingCourses = false;
-    },
+    this.courses = json?.data || [];
+  } catch (err) {
+    console.error("fetchCourses error:", err);
+    this.courses = [];
+  } finally {
+    this.loadingCourses = false;
+  }
+},
 
-    async toggleRequirements(course) {
-      const courseId = course.id;
+    toggleRequirements(courseId) {
       this.showReqMap[courseId] = !this.showReqMap[courseId];
-
-      if (this.showReqMap[courseId] && !this.requirementsMap[courseId]) {
-        this.loadingReqMap[courseId] = true;
-        // API call to fetch requirements here
-        this.loadingReqMap[courseId] = false;
-      }
     },
 
-    enrollCourse(course) {
-      if (confirm(`Are you sure you want to enroll in ${course.course_name}?`)) {
-        this.reservationForm.course = String(course.id);
-        this.activeTab = "reservation";
-        this.fetchMonthSchedules();
-      }
+    selectCourseForUpload(course) {
+      this.selectedCourse = course;
+      this.activeTab = "upload";
+      // optional: auto-open requirements list on selected course
     },
 
-    async fetchMonthSchedules() {
-      // To be implemented with API call
-      this.loadingMonth = true;
-      // API call here
-      this.loadingMonth = false;
-    },
+    onFilesPicked(e) {
+      const files = Array.from(e.target.files || []);
+      // simple validation: max 5MB, allowed types
+      const allowed = new Set([
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+      ]);
 
-    async onCourseChange() {
-      this.reservationForm.schedule_id = "";
-      this.availableSchedules = [];
-      this.selectedDate = null;
-      await this.fetchMonthSchedules();
-    },
-
-    previousMonth() {
-      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
-      this.selectedDate = null;
-      this.availableSchedules = [];
-      this.reservationForm.schedule_id = "";
-      this.fetchMonthSchedules();
-    },
-
-    nextMonth() {
-      this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
-      this.selectedDate = null;
-      this.availableSchedules = [];
-      this.reservationForm.schedule_id = "";
-      this.fetchMonthSchedules();
-    },
-
-    async selectDate(day) {
-      if (!day.isCurrentMonth) return;
-      if (!this.reservationForm.course) {
-        alert("Please select a training first.");
-        return;
-      }
-
-      this.selectedDate = day;
-      this.availableSchedules = [];
-      this.reservationForm.schedule_id = "";
-
-      await this.fetchAvailabilityForSelectedDate();
-    },
-
-    formatSelectedDate(dateObj) {
-      const d = new Date(dateObj.date + "T00:00:00");
-      return d.toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const filtered = files.filter((f) => {
+        if (!allowed.has(f.type)) return false;
+        if (f.size > 5 * 1024 * 1024) return false;
+        return true;
       });
+
+      this.selectedFiles = filtered;
+      // reset input so picking same file again works
+      e.target.value = "";
     },
 
-    async fetchAvailabilityForSelectedDate() {
-      if (!this.selectedDate?.date) return;
-      if (!this.reservationForm.course) return;
-
-      this.loadingAvailability = true;
-      // API call to fetch availability here
-      this.loadingAvailability = false;
+    removeFile(idx) {
+      this.selectedFiles.splice(idx, 1);
     },
 
-    pickSchedule(s) {
-      this.reservationForm.schedule_id = String(s.schedule_id);
+    formatBytes(bytes) {
+      const b = Number(bytes || 0);
+      if (b < 1024) return `${b} B`;
+      const kb = b / 1024;
+      if (kb < 1024) return `${kb.toFixed(1)} KB`;
+      const mb = kb / 1024;
+      return `${mb.toFixed(1)} MB`;
     },
 
-    async submitReservation() {
-      if (!this.canSubmitReservation) return;
+    // UI-only placeholder (wire to your API later)
+    async submitDocuments() {
+      if (!this.canSubmitUploads) return;
 
-      this.isSubmitting = true;
+      this.submitting = true;
       try {
-        // API call to submit reservation here
-        alert("✅ Reservation successful!");
-        
-        // Reset form
-        this.reservationForm.paymentMethod = "";
-        this.reservationForm.notes = "";
-        this.reservationForm.schedule_id = "";
-        this.availableSchedules = [];
-        this.selectedDate = null;
-
-        await this.fetchMonthSchedules();
+        // TODO: connect to your upload API (FormData + POST)
+        // For now, show a realistic message.
+        alert("✅ Documents submitted! Please wait for admin call/message for next steps.");
+        this.selectedFiles = [];
       } catch (err) {
-        console.error("Reservation failed:", err);
-        alert("❌ Reservation failed. Please try again.");
+        console.error(err);
+        alert("❌ Upload failed. Please try again.");
       } finally {
-        this.isSubmitting = false;
+        this.submitting = false;
       }
+    },
+
+    loadUserData() {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          this.studentName = user.name || user.username || "Student";
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      }
+    },
+
+    getUserInitial() {
+      return String(this.studentName || "S").charAt(0).toUpperCase();
     },
   },
 
   async mounted() {
-    // Initialize data fetching
-    // await this.fetchCourses();
-    // await this.fetchMonthSchedules();
+    this.loadUserData();
+    await this.fetchCourses();
   },
 };
 </script>

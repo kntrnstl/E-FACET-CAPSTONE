@@ -102,12 +102,6 @@ const tesdaRoutes = [
     meta: { requiresAuth: true, requiresStudent: true },
   },
   {
-    path: "/tesda-requirements",
-    name: "TesdaRequirements",
-    component: () => import("../components/student/TesdaRequirements.vue"),
-    meta: { requiresAuth: true, requiresStudent: true },
-  },
-  {
     path: "/tesda-schedule",
     name: "TesdaSchedule",
     component: () => import("../components/student/TesdaSchedule.vue"),

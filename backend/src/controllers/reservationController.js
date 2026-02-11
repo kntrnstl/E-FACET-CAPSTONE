@@ -1,5 +1,6 @@
 // backend/src/controllers/reservationController.js
 const pool = require("../config/database");
+const { sendReservationConfirmation, sendAdminNotification } = require("../services/emailService");
 
 // statuses that occupy slot
 const OCCUPYING_STATUSES = ["PENDING", "CONFIRMED", "APPROVED", "ACTIVE"];
@@ -278,7 +279,7 @@ exports.createReservation = async (req, res) => {
 
     const [schedRows] = await conn.execute(
       `
-      SELECT schedule_id, course_id, schedule_date, start_time, end_time, total_slots, status
+      SELECT schedule_id, course_id, schedule_date, start_time, end_time, total_slots, status, instructor_id
       FROM schedules
       WHERE schedule_id = ?
       FOR UPDATE
@@ -484,11 +485,116 @@ exports.createReservation = async (req, res) => {
 
     const reservationId = ins.insertId;
 
+    // 🔥 GET STUDENT INFO
+    const [studentRows] = await conn.execute(
+      `SELECT fullname, email FROM users WHERE id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    // 🔥 GET COURSE INFO
+    const [courseRows] = await conn.execute(
+      `SELECT course_name, course_code, course_fee FROM courses WHERE id = ? LIMIT 1`,
+      [cid]
+    );
+
+    // 🔥 GET INSTRUCTOR NAME
+    let instructorName = "TBA";
+    if (sched.instructor_id) {
+      const [instructorRows] = await conn.execute(
+        `SELECT CONCAT(first_name, ' ', last_name) AS fullname FROM instructors WHERE instructor_id = ? LIMIT 1`,
+        [sched.instructor_id]
+      );
+      if (instructorRows.length) {
+        instructorName = instructorRows[0].fullname;
+      }
+    }
+
     await conn.commit();
+
+    // 🔥 SEND EMAIL NOTIFICATIONS (non-blocking)
+    if (studentRows.length && courseRows.length) {
+      const student = studentRows[0];
+      const course = courseRows[0];
+
+      const emailData = {
+        studentEmail: student.email,
+        studentName: student.fullname,
+        courseName: course.course_name,
+        courseCode: course.course_code || "",
+        scheduleId: sid,
+        date: scheduleDate,
+        startTime: sched.start_time,
+        endTime: sched.end_time,
+        instructor: instructorName,
+        courseFee: Number(course.course_fee || fee.amount || 0),
+        paymentMethod: payMethod,
+        paymentRef: payment_ref || null,
+        requirementsMode: reqMode,
+        notes: notes || null,
+        reservationId,
+        isPackage: false, // Update this if you support packages
+      };
+
+      console.log("📧 ============================================");
+      console.log("📧 PREPARING TO SEND EMAILS");
+      console.log("📧 Student Email:", emailData.studentEmail);
+      console.log("📧 Student Name:", emailData.studentName);
+      console.log("📧 Course:", emailData.courseName);
+      console.log("📧 Reservation ID:", emailData.reservationId);
+      console.log("📧 ============================================");
+
+      // Send emails asynchronously (non-blocking)
+      setImmediate(() => {
+        console.log("📧 Starting email send process...");
+        
+        Promise.all([
+          sendReservationConfirmation(emailData)
+            .then((result) => {
+              console.log("✅ Student confirmation email sent successfully!");
+              console.log("   Message ID:", result.messageId);
+              return result;
+            })
+            .catch((err) => {
+              console.error("❌ Student email FAILED:");
+              console.error("   Error:", err.message);
+              console.error("   Stack:", err.stack);
+              throw err;
+            }),
+          
+          sendAdminNotification(emailData)
+            .then((result) => {
+              console.log("✅ Admin notification email sent successfully!");
+              console.log("   Message ID:", result.messageId);
+              return result;
+            })
+            .catch((err) => {
+              console.error("❌ Admin email FAILED:");
+              console.error("   Error:", err.message);
+              console.error("   Stack:", err.stack);
+              throw err;
+            }),
+        ])
+          .then(() => {
+            console.log("📧 ============================================");
+            console.log("📧 ALL EMAILS SENT SUCCESSFULLY!");
+            console.log("📧 ============================================");
+          })
+          .catch((err) => {
+            console.error("📧 ============================================");
+            console.error("📧 EMAIL SENDING FAILED");
+            console.error("📧 Error:", err.message);
+            console.error("📧 ============================================");
+          });
+      });
+    } else {
+      console.log("⚠️ WARNING: Cannot send emails - missing student or course data");
+      console.log("   Student rows:", studentRows.length);
+      console.log("   Course rows:", courseRows.length);
+    }
 
     return res.status(201).json({
       status: "success",
-      message: "Reservation created (CONFIRMED)",
+      message: "Reservation created (CONFIRMED). Check your email for confirmation!",
       data: { reservation_id: reservationId, schedule_date: scheduleDate },
     });
   } catch (err) {
@@ -632,10 +738,6 @@ exports.listReservationsAdmin = async (req, res) => {
   try {
     const { schedule_id, status } = req.query;
 
-    // ✅ "admin_status" logic:
-    // - If reservation is GCASH and payment submission is FOR_VERIFICATION/PROOF_SUBMITTED
-    //   show as PENDING in admin (while student stays CONFIRMED)
-    // - Otherwise, show real reservation_status
     let sql = `
       SELECT
         r.reservation_id,
@@ -665,11 +767,9 @@ exports.listReservationsAdmin = async (req, res) => {
         sp.currency,
 
 CASE
-  -- pag DONE/CANCELLED na, wag na i-override
   WHEN UPPER(r.reservation_status) IN ('DONE','CANCELLED')
     THEN UPPER(r.reservation_status)
 
-  -- gawin lang PENDING sa admin kapag GCASH + pending verify AND still CONFIRMED
   WHEN UPPER(r.payment_method) = 'GCASH'
    AND UPPER(COALESCE(sp.status,'')) IN ('FOR_VERIFICATION','PROOF_SUBMITTED')
    AND UPPER(r.reservation_status) = 'CONFIRMED'
@@ -707,7 +807,6 @@ END AS admin_status
     if (status) {
       const st = String(status).toUpperCase();
 
-      // ✅ special: admin "PENDING" means "pending payment verification"
       if (st === "PENDING") {
         where.push(`
           UPPER(r.payment_method) = 'GCASH'
@@ -1014,7 +1113,6 @@ exports.getReservationDetailsAdmin = async (req, res) => {
         .json({ status: "error", message: "Invalid reservationId" });
     }
 
-    // 1) reservation + student + schedule + course
     const [rows] = await pool.execute(
       `
       SELECT
@@ -1056,7 +1154,6 @@ exports.getReservationDetailsAdmin = async (req, res) => {
 
     const reservation = rows[0];
 
-    // 2) payment submission (student_payment_submissions)
     const [payRows] = await pool.execute(
       `
       SELECT
@@ -1092,7 +1189,6 @@ exports.getReservationDetailsAdmin = async (req, res) => {
 
     const payment = payRows.length ? payRows[0] : null;
 
-    // 3) requirements uploaded (requirement_submissions + course_requirements)
     const [reqRows] = await pool.execute(
       `
       SELECT

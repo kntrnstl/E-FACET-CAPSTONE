@@ -19,10 +19,10 @@ function isAllowedOrigin(origin) {
   if (!origin) return true; // Postman / curl
   if (allowedOrigins.has(origin)) return true;
 
-  // ✅ allow Vite localhost ports like 5173..5199
+  // allow Vite localhost ports like 5173..5199
   if (/^http:\/\/localhost:51\d{2}$/.test(origin)) return true;
 
-  // Optional: allow 127.0.0.1 too
+  // allow 127.0.0.1 too
   if (/^http:\/\/127\.0\.0\.1:51\d{2}$/.test(origin)) return true;
 
   return false;
@@ -38,7 +38,7 @@ app.use(
   }),
 );
 
-// ✅ preflight
+// preflight
 app.options(/.*/, cors());
 
 // ==============================
@@ -67,39 +67,52 @@ app.use(
 // ==============================
 // Static uploads
 // ==============================
-// Static uploads (backend/uploads/*)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-
-
-
 // ==============================
-// Routes
+// Routes (IMPORTS)
 // ==============================
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const studentRoutes = require("./src/routes/studentRoutes");
-const instructorRoutes = require("./src/routes/instructorRoutes"); // ✅ ADD THIS
-const trainerRoutes = require("./src/routes/trainerRoutes"); // ✅ ADD THIS
+const instructorRoutes = require("./src/routes/instructorRoutes");
+const trainerRoutes = require("./src/routes/trainerRoutes");
 const adminTesdaRoutes = require("./src/routes/adminTesdaRoutes");
+const tesdaPublicRoutes = require("./src/routes/tesdaPublicRoutes"); // ✅ FIXED PATH
+
 const studentResCtrl = require("./src/controllers/studentReservationController");
 
-// for testing: every 2 minutes
+// ==============================
+// Auto mark DONE reservations
+// ==============================
 setInterval(async () => {
-  const changed = await studentResCtrl.autoMarkDone();
-  if (changed > 0) console.log(`[autoDone] marked DONE: ${changed}`);
+  try {
+    const changed = await studentResCtrl.autoMarkDone();
+    if (changed > 0) console.log(`[autoDone] marked DONE: ${changed}`);
+  } catch (err) {
+    console.error("autoMarkDone error:", err);
+  }
 }, 120000);
 
+// ==============================
+// Routes (MOUNT)
+// ORDER IS IMPORTANT
+// ==============================
 
-app.use("/api/admin/tesda", adminTesdaRoutes);
+// TESDA
+app.use("/api/admin/tesda", adminTesdaRoutes); // admin only
+app.use("/api/tesda", tesdaPublicRoutes); // public/student
+
+// Core system
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
-app.use("/api/instructor", instructorRoutes); // ✅ ADD THIS
+app.use("/api/instructor", instructorRoutes);
 app.use("/api/trainer", trainerRoutes);
 
-
-// DEBUG: check if session is working
+// ==============================
+// DEBUG: check session
+// ==============================
 app.get("/api/debug/session", (req, res) => {
   res.json({
     user: req.session?.user || null,
@@ -107,9 +120,8 @@ app.get("/api/debug/session", (req, res) => {
   });
 });
 
-
 // ==============================
-// Test route
+// Root test route
 // ==============================
 app.get("/", (req, res) => {
   res.json({
@@ -120,12 +132,14 @@ app.get("/", (req, res) => {
       student: "/api/student/*",
       instructor: "/api/instructor/*",
       trainer: "/api/trainer/*",
+      tesda_public: "/api/tesda/*",
+      tesda_admin: "/api/admin/tesda/*",
     },
   });
 });
 
 // ==============================
-// 404 handler (JSON)
+// 404 handler (MUST be last before error handler)
 // ==============================
 app.use((req, res) => {
   res.status(404).json({
@@ -136,7 +150,7 @@ app.use((req, res) => {
 });
 
 // ==============================
-// Error handler (JSON)
+// Error handler
 // ==============================
 app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);

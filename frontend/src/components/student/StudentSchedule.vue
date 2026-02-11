@@ -195,7 +195,7 @@
                 </div>
 
                 <button
-                  @click="viewClassDetails(classItem)"
+                  @click="openDetails(classItem)"
                   class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                 >
                   Details
@@ -234,11 +234,10 @@
               class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
               <option value="all">All Status</option>
-              <option value="PENDING">PENDING</option>
+              <!-- student-facing statuses -->
               <option value="CONFIRMED">CONFIRMED</option>
+              <option value="DONE">DONE</option>
               <option value="CANCELLED">CANCELLED</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="ACTIVE">ACTIVE</option>
             </select>
 
             <button
@@ -317,12 +316,13 @@
                   <span class="px-3 py-1 rounded-full text-xs font-medium" :class="getStatusClass(schedule.status)">
                     {{ schedule.status }}
                   </span>
+                  <!-- optional debug tiny text: admin raw status -->
+                  <!-- <div class="text-[10px] text-gray-400 mt-1">admin: {{ schedule.raw_status }}</div> -->
                 </td>
 
                 <td class="py-3 px-4">
-                  <!-- ✅ VIEW ONLY -->
                   <button
-                    @click="viewScheduleDetails(schedule)"
+                    @click="openDetails(schedule)"
                     class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
                   >
                     View
@@ -368,6 +368,92 @@
         </div>
       </div>
     </div>
+
+    <!-- ✅ DETAILS MODAL -->
+    <div
+      v-if="detailsOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeDetails"
+    >
+      <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div class="p-4 border-b border-gray-200 flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">{{ getCourseIcon(detailsItem?.course) }}</span>
+              <h3 class="text-lg font-semibold text-gray-800">
+                {{ detailsItem?.course || "Schedule Details" }}
+              </h3>
+            </div>
+            <p class="text-sm text-gray-500 mt-1">
+              {{ detailsItem?.course_code ? `Code: ${detailsItem.course_code}` : "—" }}
+            </p>
+          </div>
+
+          <button
+            @click="closeDetails"
+            class="px-3 py-1 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="p-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Date</div>
+              <div class="font-medium text-gray-800 mt-1">{{ formatDate(detailsItem?.date) }}</div>
+              <div class="text-xs text-gray-500 mt-1">{{ getDayName(detailsItem?.date) }}</div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Time</div>
+              <div class="font-medium text-gray-800 mt-1">{{ detailsItem?.time || "—" }}</div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Instructor</div>
+              <div class="font-medium text-gray-800 mt-1">{{ detailsItem?.instructor || "—" }}</div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Status (Student)</div>
+              <div class="mt-1">
+                <span class="px-3 py-1 rounded-full text-xs font-medium" :class="getStatusClass(detailsItem?.status)">
+                  {{ detailsItem?.status || "—" }}
+                </span>
+              </div>
+              <div class="text-[11px] text-gray-400 mt-2">
+                Note: Admin may show this as PENDING for verification.
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Room</div>
+              <div class="font-medium text-gray-800 mt-1">{{ detailsItem?.room || "—" }}</div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50">
+              <div class="text-xs text-gray-500">Payment Method</div>
+              <div class="font-medium text-gray-800 mt-1">{{ detailsItem?.payment_method || "—" }}</div>
+            </div>
+
+            <div class="p-3 rounded-xl border bg-gray-50 md:col-span-2">
+              <div class="text-xs text-gray-500">Created At</div>
+              <div class="font-medium text-gray-800 mt-1">{{ formatDateTime(detailsItem?.created_at) }}</div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <button
+              @click="closeDetails"
+              class="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </StudentLayout>
 </template>
 
@@ -400,6 +486,10 @@ export default {
 
       schedules: [],
 
+      // ✅ modal state
+      detailsOpen: false,
+      detailsItem: null,
+
       daysOfWeek: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
       months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
     };
@@ -415,7 +505,8 @@ export default {
           String(s.course || "").toLowerCase().includes(q) ||
           String(s.instructor || "").toLowerCase().includes(q) ||
           String(s.time || "").toLowerCase().includes(q) ||
-          String(s.status || "").toLowerCase().includes(q)
+          String(s.status || "").toLowerCase().includes(q) ||       // student-facing
+          String(s.raw_status || "").toLowerCase().includes(q)      // admin raw
         );
       }
 
@@ -441,9 +532,12 @@ export default {
       return Math.max(1, Math.ceil(this.filteredSchedules.length / this.itemsPerPage));
     },
 
-    confirmedSchedules() {
-      return this.schedules.filter((s) => String(s.status || "").toUpperCase() === "CONFIRMED");
-    },
+    // ✅ Student-facing "confirmed" schedules = anything that should be shown as CONFIRMED/APPROVED/ACTIVE
+studentConfirmedSchedules() {
+  const ok = new Set(["CONFIRMED"]);
+  return this.schedules.filter((s) => ok.has(String(s.status || "").toUpperCase()));
+},
+
 
     upcomingClasses() {
       if (!this.selectedDay) return [];
@@ -454,7 +548,8 @@ export default {
       const dayStr = this.selectedDay < 10 ? `0${this.selectedDay}` : `${this.selectedDay}`;
       const dateStr = `${year}-${monthStr}-${dayStr}`;
 
-      return this.confirmedSchedules.filter((s) => s.date === dateStr);
+      // ✅ use student-facing statuses
+      return this.studentConfirmedSchedules.filter((s) => s.date === dateStr);
     },
 
     uniqueCourses() {
@@ -479,6 +574,21 @@ export default {
   },
 
   methods: {
+    // ✅ map admin/raw status to student-facing status
+toStudentStatus(rawStatus) {
+  const s = String(rawStatus || "").toUpperCase();
+
+  if (s === "CANCELLED") return "CANCELLED";
+    if (s === "DONE" || s === "COMPLETED") return "DONE"; // ✅ add this
+  if (s === "PENDING") return "CONFIRMED";   // admin verification
+  if (s === "APPROVED") return "CONFIRMED";  // admin approved step
+
+  if (["CONFIRMED", "ACTIVE"].includes(s)) return s;
+
+  return "CONFIRMED"; // safe default for student
+},
+
+
     async fetchMySchedule() {
       try {
         this.loading = true;
@@ -487,17 +597,31 @@ export default {
         const res = await api.get("/student/my-schedule");
         const list = res.data?.schedules || res.data?.data || [];
 
-        this.schedules = list.map((x) => ({
-          id: x.id,
-          date: x.date || null,
-          time: x.time || "—",
-          course: x.course || (x.course_id ? `Course #${x.course_id}` : "—"),
-          course_code: x.course_code || "",
-          instructor: x.instructor || "—",
-          status: String(x.status || "").toUpperCase(),
-          payment_method: x.payment_method || null,
-          created_at: x.created_at || null,
-        }));
+        this.schedules = list.map((x) => {
+          const raw = String(x.status || "").toUpperCase();
+          return {
+            id: x.id,
+            date: x.date || null,
+            time: x.time || "—",
+            course: x.course || (x.course_id ? `Course #${x.course_id}` : "—"),
+            course_code: x.course_code || "",
+            instructor: x.instructor || "—",
+
+            // ✅ keep admin raw status
+            raw_status: raw,
+
+            // ✅ student-facing status
+            status: this.toStudentStatus(raw),
+
+            payment_method: x.payment_method || null,
+            room: x.room || x.room_name || null,
+            created_at: x.created_at || null,
+
+            // optional extras if exist
+            proof_url: x.proof_url || x.proofUrl || x.proof || null,
+            reference_no: x.reference_no || x.referenceNo || null,
+          };
+        });
 
         this.updateScheduleStats();
       } catch (err) {
@@ -511,35 +635,42 @@ export default {
 
     handleSearch() { this.currentPage = 1; },
 
+    openDetails(item) {
+      this.detailsItem = item || null;
+      this.detailsOpen = true;
+    },
+
+    closeDetails() {
+      this.detailsOpen = false;
+      this.detailsItem = null;
+    },
+
     getInitials(name) {
       const str = String(name || "").trim();
       if (!str || str === "—") return "NA";
       return str.split(" ").map((n) => n[0]).join("").toUpperCase().substring(0, 2);
     },
 
-    getStatusClass(status) {
-      const s = String(status || "").toUpperCase();
-      switch (s) {
-        case "PENDING": return "bg-yellow-100 text-yellow-800";
-        case "CONFIRMED": return "bg-green-100 text-green-800";
-        case "APPROVED": return "bg-blue-100 text-blue-800";
-        case "ACTIVE": return "bg-indigo-100 text-indigo-800";
-        case "CANCELLED": return "bg-red-100 text-red-800";
-        default: return "bg-gray-100 text-gray-800";
-      }
-    },
+getStatusClass(status) {
+  const s = String(status || "").toUpperCase();
+  switch (s) {
+    case "CONFIRMED": return "bg-green-100 text-green-800";
+    case "DONE": return "bg-indigo-100 text-indigo-800";
+    case "CANCELLED": return "bg-red-100 text-red-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+},
 
-    getClassStatusClass(status) {
-      const s = String(status || "").toUpperCase();
-      switch (s) {
-        case "PENDING": return "bg-yellow-50 text-yellow-700 border border-yellow-200";
-        case "CONFIRMED": return "bg-green-50 text-green-700 border border-green-200";
-        case "APPROVED": return "bg-blue-50 text-blue-700 border border-blue-200";
-        case "ACTIVE": return "bg-indigo-50 text-indigo-700 border border-indigo-200";
-        case "CANCELLED": return "bg-red-50 text-red-700 border border-red-200";
-        default: return "bg-gray-50 text-gray-700 border border-gray-200";
-      }
-    },
+getClassStatusClass(status) {
+  const s = String(status || "").toUpperCase();
+  switch (s) {
+    case "CONFIRMED": return "bg-green-50 text-green-700 border border-green-200";
+    case "DONE": return "bg-indigo-50 text-indigo-700 border border-indigo-200";
+    case "CANCELLED": return "bg-red-50 text-red-700 border border-red-200";
+    default: return "bg-gray-50 text-gray-700 border border-gray-200";
+  }
+},
+
 
     getCourseColorClass(course) {
       const colors = {
@@ -571,15 +702,25 @@ export default {
 
     formatDate(dateString) {
       if (!dateString) return "—";
-      const d = new Date(dateString + "T00:00:00");
+      const d = new Date(String(dateString) + "T00:00:00");
       if (Number.isNaN(d.getTime())) return "—";
       const month = this.months[d.getMonth()].substring(0, 3);
       return `${month} ${d.getDate()}, ${d.getFullYear()}`;
     },
 
+    formatDateTime(dateTimeString) {
+      if (!dateTimeString) return "—";
+      const d = new Date(dateTimeString);
+      if (Number.isNaN(d.getTime())) return String(dateTimeString);
+      const month = this.months[d.getMonth()].substring(0, 3);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${month} ${d.getDate()}, ${d.getFullYear()} ${hh}:${mm}`;
+    },
+
     getDayName(dateString) {
       if (!dateString) return "—";
-      const d = new Date(dateString + "T00:00:00");
+      const d = new Date(String(dateString) + "T00:00:00");
       if (Number.isNaN(d.getTime())) return "—";
       return this.daysOfWeek[d.getDay()];
     },
@@ -598,23 +739,14 @@ export default {
       this.selectedDay = this.selectedDay === day ? null : day;
     },
 
-    // ✅ Calendar highlight ONLY if CONFIRMED on that day
+    // ✅ Calendar highlight if student sees it as confirmed/approved/active
     hasScheduleForDay(day) {
       const year = this.currentDate.getFullYear();
       const month = this.currentDate.getMonth() + 1;
       const monthStr = month < 10 ? `0${month}` : `${month}`;
       const dayStr = day < 10 ? `0${day}` : `${day}`;
       const dateStr = `${year}-${monthStr}-${dayStr}`;
-      return this.confirmedSchedules.some((s) => s.date === dateStr);
-    },
-
-    viewScheduleDetails(schedule) {
-      console.log("Viewing schedule details:", schedule);
-      // dito mo ilagay modal kung meron ka
-    },
-
-    viewClassDetails(item) {
-      console.log("Viewing class details:", item);
+      return this.studentConfirmedSchedules.some((s) => s.date === dateStr);
     },
 
     prevPage() { if (this.currentPage > 1) this.currentPage--; },
@@ -640,7 +772,8 @@ export default {
         return d > oneWeekLater && d <= twoWeeksLater;
       }).length;
 
-      this.scheduleStats.completed = this.confirmedSchedules.length;
+      // ✅ student confirmed count (includes mapped-from-pending)
+      this.scheduleStats.completed = this.studentConfirmedSchedules.length;
     },
   },
 

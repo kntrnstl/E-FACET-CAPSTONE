@@ -33,7 +33,9 @@
         <div class="text-sm text-yellow-900">
           Schedule #<span class="font-semibold">{{ activeReservation.schedule_id }}</span>
           • Status:
-          <span class="font-semibold">{{ activeReservation.reservation_status }}</span>
+          <span class="font-semibold">
+            {{ mapStudentStatus(activeReservation.reservation_status) }}
+          </span>
         </div>
 
         <!-- ✅ show sibling if 2-day -->
@@ -599,83 +601,174 @@
     <!-- GCash QRPH Modal -->
     <!-- ===================== -->
     <div v-if="showGcashModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
-        <div class="flex items-start justify-between">
+      <div class="w-full max-w-4xl rounded-2xl bg-white shadow-xl border overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-4 p-5 border-b bg-white">
           <div>
-            <h3 class="text-lg font-bold text-green-800">Pay with GCash (QRPH)</h3>
-            <p class="text-sm text-gray-600 mt-1">
-              Course: <span class="font-medium">{{ selectedCourse?.course_name }}</span>
-            </p>
-            <p class="text-sm text-gray-600">
-              Amount:
-              <span class="font-semibold text-green-700">
-                ₱{{ Number(selectedCourse?.course_fee || 0).toLocaleString() }}
-              </span>
-            </p>
-            <p class="text-xs text-gray-500 mt-2">
-              Payment Ref: <span class="font-mono">{{ paymentRef || "—" }}</span>
-            </p>
+            <h3 class="text-lg md:text-xl font-bold text-green-800">Pay with GCash (QRPH)</h3>
+            <div class="mt-1 text-sm text-gray-600 space-y-0.5">
+              <div>
+                Course: <span class="font-medium">{{ selectedCourse?.course_name }}</span>
+              </div>
+              <div>
+                Amount:
+                <span class="font-semibold text-green-700">
+                  ₱{{ Number(selectedCourse?.course_fee || 0).toLocaleString() }}
+                </span>
+              </div>
+              <div class="text-xs text-gray-500">
+                Payment Ref: <span class="font-mono">{{ paymentRef || "—" }}</span>
+              </div>
+            </div>
           </div>
 
-          <button class="text-gray-400 hover:text-gray-600 text-xl" @click="closeGcashModal">✕</button>
-        </div>
-
-        <div v-if="gcashError" class="mt-4 text-sm text-red-600">
-          {{ gcashError }}
-        </div>
-
-        <div class="mt-5">
           <button
-            v-if="!paymentRef"
-            class="w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:bg-gray-300"
-            @click="createQrphPaymentRef"
-            :disabled="gcashLoading || !reservationForm.schedule_id"
-            :title="!reservationForm.schedule_id ? 'Pick a schedule first' : ''"
+            class="shrink-0 rounded-lg px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            @click="closeGcashModal"
+            :disabled="gcashLoading"
+            title="Close"
           >
-            {{ gcashLoading ? "Preparing..." : "Generate Payment Ref" }}
+            ✕
           </button>
+        </div>
 
-          <div v-else class="space-y-4">
-            <div class="border rounded-lg p-3 bg-gray-50">
-              <div class="text-sm text-gray-700 font-medium mb-2">Scan this QRPH in your GCash app:</div>
-              <img src="/admin-qrph.png" alt="QRPH" class="w-full rounded-lg border bg-white" />
-              <div class="text-xs text-gray-500 mt-2">
-                Open GCash → Scan QR → Pay → screenshot/receipt → upload below.
+        <!-- Body -->
+        <div class="p-5 max-h-[80vh] overflow-y-auto">
+          <div v-if="gcashError" class="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            {{ gcashError }}
+          </div>
+
+          <!-- If no paymentRef yet, show single action (centered) -->
+          <div v-if="!paymentRef" class="flex flex-col items-center justify-center py-10">
+            <div class="text-sm text-gray-600 mb-4 text-center max-w-lg">
+              Generate a Payment Ref first so your QR payment proof can be matched to your reservation.
+            </div>
+
+            <button
+              class="w-full md:w-80 rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:bg-gray-300"
+              @click="createQrphPaymentRef"
+              :disabled="gcashLoading || !reservationForm.schedule_id"
+              :title="!reservationForm.schedule_id ? 'Pick a schedule first' : ''"
+            >
+              {{ gcashLoading ? "Preparing..." : "Generate Payment Ref" }}
+            </button>
+          </div>
+
+          <!-- ✅ Landscape layout once paymentRef exists -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- LEFT: QR -->
+            <div class="rounded-xl border bg-gray-50 p-4">
+              <div class="text-sm font-semibold text-gray-800 mb-3">
+                Scan this QRPH in your GCash app
+              </div>
+
+              <div class="rounded-xl border bg-white p-3">
+                <img
+                  src="/adminqrph.png"
+                  alt="QRPH"
+                  class="w-full h-auto rounded-lg"
+                />
+              </div>
+
+              <ol class="mt-3 text-xs text-gray-600 space-y-1 list-decimal pl-4">
+                <li>Open GCash → Scan QR</li>
+                <li>Pay the exact amount</li>
+                <li>Screenshot/receipt</li>
+                <li>Upload proof on the right</li>
+              </ol>
+
+              <div class="mt-3 text-xs text-gray-500">
+                Tip: Keep this window open while you pay.
               </div>
             </div>
 
-            <div class="border rounded-lg p-3">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Upload Proof of Payment</label>
-              <input type="file" accept="image/*,.pdf" @change="onQrphProofChange" class="block w-full text-sm" />
-              <div class="text-xs text-gray-600 mt-2">
-                <span v-if="qrphProofFile">Selected: {{ qrphProofFile.name }}</span>
-                <span v-else>No file selected</span>
+            <!-- RIGHT: Proof upload + submit -->
+            <div class="rounded-xl border p-4">
+              <div class="text-sm font-semibold text-gray-800 mb-3">Submit Proof of Payment</div>
+
+              <div class="rounded-lg border bg-white p-3">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Upload proof (image/PDF)</label>
+
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  @change="onQrphProofChange"
+                  class="block w-full text-sm"
+                />
+
+                <div class="mt-2 text-xs text-gray-600">
+                  <span v-if="qrphProofFile">Selected: {{ qrphProofFile.name }}</span>
+                  <span v-else>No file selected</span>
+                </div>
+
+                <button
+                  class="mt-3 w-full rounded-xl bg-green-700 px-4 py-3 text-white font-semibold hover:bg-green-800 disabled:bg-gray-300"
+                  @click="uploadQrphProof"
+                  :disabled="gcashLoading || !qrphProofFile"
+                >
+                  {{ gcashLoading ? "Uploading..." : "Submit Proof" }}
+                </button>
+
+                <div v-if="qrphSubmitted" class="mt-3 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800 font-medium">
+                  ✅ Submitted! Waiting for admin verification.
+                </div>
               </div>
 
-              <button
-                class="mt-3 w-full rounded-lg bg-green-700 px-4 py-2 text-white hover:bg-green-800 disabled:bg-gray-300"
-                @click="uploadQrphProof"
-                :disabled="gcashLoading || !qrphProofFile"
-              >
-                {{ gcashLoading ? "Uploading..." : "Submit Proof" }}
-              </button>
-
-              <div v-if="qrphSubmitted" class="mt-3 text-sm text-green-700 font-medium">
-                ✅ Submitted! Waiting for admin verification.
+              <div class="mt-4 text-xs text-gray-500">
+                After submitting proof, go back and click <span class="font-semibold">Reserve Slot (Confirmed)</span>.
               </div>
             </div>
           </div>
         </div>
 
-        <div class="mt-5 flex gap-2">
+        <!-- Footer -->
+        <div class="p-4 border-t bg-white flex justify-end">
           <button
-            class="flex-1 rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+            class="rounded-xl bg-gray-200 px-4 py-2 hover:bg-gray-300 disabled:opacity-60"
             @click="closeGcashModal"
             :disabled="gcashLoading"
           >
             Close
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- ✅ PRO Notification Toast -->
+    <!-- ===================== -->
+<div
+  v-if="toast.show"
+  class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] w-[92vw] max-w-sm"
+  aria-live="polite"
+>
+
+      <div
+        class="rounded-2xl shadow-xl border px-4 py-3 flex items-start gap-3"
+        :class="toast.type === 'success'
+          ? 'bg-green-600 text-white border-green-700'
+          : toast.type === 'warning'
+            ? 'bg-yellow-500 text-white border-yellow-600'
+            : 'bg-red-600 text-white border-red-700'"
+      >
+        <div class="text-xl leading-none">
+          {{ toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : '❌' }}
+        </div>
+
+        <div class="flex-1">
+          <div class="text-sm font-semibold leading-snug">{{ toast.title }}</div>
+          <div v-if="toast.message" class="text-xs opacity-95 mt-0.5 leading-snug">
+            {{ toast.message }}
+          </div>
+        </div>
+
+        <button
+          class="shrink-0 rounded-lg px-2 py-1 bg-white/10 hover:bg-white/20"
+          @click="toast.show = false"
+          title="Dismiss"
+        >
+          ✕
+        </button>
       </div>
     </div>
   </StudentLayout>
@@ -761,6 +854,15 @@ export default {
       loadingActiveReservation: false,
 
       daysOfWeek: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+
+      // ✅ PRO notif/toast
+      toast: {
+        show: false,
+        type: "success", // success | error | warning
+        title: "",
+        message: "",
+        _timer: null,
+      },
     };
   },
 
@@ -889,7 +991,7 @@ export default {
     canSubmitFinal() {
       if (this.hasActiveReservation) return false;
       if (!this.selectedCourse) return false;
-      if (!this.reservationForm.schedule_id) return false (this.canProceedUploadStep ? false : false);
+      if (!this.reservationForm.schedule_id) return false;
       if (!this.canProceedUploadStep) return false;
       if (this.isSubmitting) return false;
 
@@ -907,6 +1009,32 @@ export default {
   },
 
   methods: {
+    // ✅ PRO NOTIF
+    showToast(title, message = "", type = "success", ms = 3500) {
+      try {
+        if (this.toast._timer) clearTimeout(this.toast._timer);
+      } catch (e) {}
+
+      this.toast.type = type;
+      this.toast.title = String(title || "");
+      this.toast.message = String(message || "");
+      this.toast.show = true;
+
+      this.toast._timer = setTimeout(() => {
+        this.toast.show = false;
+        this.toast._timer = null;
+      }, Number(ms) || 3500);
+    },
+
+    mapStudentStatus(status) {
+      const s = String(status || "").toUpperCase();
+
+      // legacy/admin statuses -> student view
+      if (s === "PENDING" || s === "APPROVED") return "CONFIRMED";
+
+      return s || "—";
+    },
+
     // ✅ NEW: normalize schedule item key
     scheduleKey(s) {
       if (s?.isPackage) return `pkg-${s.day1_schedule_id}-${s.day2_schedule_id}`;
@@ -988,7 +1116,7 @@ export default {
       } catch (err) {
         console.error("fetchCourses error:", err);
         this.courses = [];
-        alert(err.response?.data?.message || "Failed to load courses");
+        this.showToast("Failed to load courses", err.response?.data?.message || "Please try again.", "error");
       } finally {
         this.loadingCourses = false;
       }
@@ -1006,7 +1134,7 @@ export default {
         } catch (err) {
           console.error("toggleRequirements error:", err);
           this.requirementsMap[courseId] = [];
-          alert(err.response?.data?.message || "Failed to load requirements");
+          this.showToast("Failed to load requirements", err.response?.data?.message || "Please try again.", "error");
         } finally {
           this.loadingReqMap[courseId] = false;
         }
@@ -1035,7 +1163,7 @@ export default {
       } catch (err) {
         console.error("fetchMonthSchedules error:", err);
         this.scheduleMap = {};
-        alert(err.response?.data?.message || "Failed to load month schedules");
+        this.showToast("Failed to load month schedules", err.response?.data?.message || "Please try again.", "error");
       } finally {
         this.loadingMonth = false;
       }
@@ -1057,7 +1185,7 @@ export default {
       } catch (err) {
         console.error("fetchAvailability error:", err);
         this.availableSchedules = [];
-        alert(err.response?.data?.message || "Failed to load availability");
+        this.showToast("Failed to load availability", err.response?.data?.message || "Please try again.", "error");
       } finally {
         this.loadingAvailability = false;
       }
@@ -1065,7 +1193,7 @@ export default {
 
     async selectCourse(course) {
       if (this.hasActiveReservation) {
-        alert("You already have an active reservation.");
+        this.showToast("You already have an active reservation", "You can reserve again once it's marked DONE.", "warning");
         return;
       }
 
@@ -1099,7 +1227,7 @@ export default {
         } catch (err) {
           console.error("selectCourse requirements error:", err);
           this.requirementsMap[course.id] = [];
-          alert(err.response?.data?.message || "Failed to load requirements");
+          this.showToast("Failed to load requirements", err.response?.data?.message || "Please try again.", "error");
         } finally {
           this.uploadLoading = false;
         }
@@ -1133,7 +1261,7 @@ export default {
 
     goToUpload() {
       if (!this.canGoUpload) {
-        alert("Pick a slot first.");
+        this.showToast("Pick a slot first", "Select a date and time slot to continue.", "warning");
         return;
       }
       this.activeTab = "upload";
@@ -1148,6 +1276,7 @@ export default {
     onRequirementsModeChange() {
       if (this.requirementsMode === "walkin") {
         this.uploads = {};
+        this.showToast("Walk-in selected", "Upload not required. You will submit requirements on-site.", "success");
       }
     },
 
@@ -1155,6 +1284,7 @@ export default {
       if (this.paymentMode === "cash") {
         this.payment.paymentMethod = "";
         this.payment.proofFile = null;
+        this.showToast("Cash on-site selected", "You can reserve without uploading payment proof.", "success");
       }
     },
 
@@ -1186,7 +1316,7 @@ export default {
 
     openGcashModal() {
       if (!this.reservationForm.schedule_id) {
-        alert("Pick a schedule first.");
+        this.showToast("Pick a schedule first", "Select a slot before opening QR payment.", "warning");
         return;
       }
       this.gcashError = "";
@@ -1209,6 +1339,7 @@ export default {
 
         if (!this.reservationForm.schedule_id) {
           this.gcashError = "Pick a schedule first.";
+          this.showToast("Pick a schedule first", "Select a slot before generating payment ref.", "warning");
           return;
         }
 
@@ -1220,10 +1351,12 @@ export default {
 
         this.paymentRef = res.data?.data?.payment_ref || "";
         if (!this.paymentRef) throw new Error("No payment_ref returned.");
-        alert(`✅ Payment ref created: ${this.paymentRef}`);
+
+        this.showToast("Payment Ref created", this.paymentRef, "success");
       } catch (err) {
         console.error("createQrphPaymentRef error:", err.response?.data || err);
         this.gcashError = err.response?.data?.message || err.message || "Failed to create payment ref.";
+        this.showToast("Failed to create payment ref", this.gcashError, "error");
       } finally {
         this.gcashLoading = false;
       }
@@ -1236,10 +1369,12 @@ export default {
 
         if (!this.paymentRef) {
           this.gcashError = "Generate Payment Ref first.";
+          this.showToast("Generate Payment Ref first", "Create payment ref before uploading proof.", "warning");
           return;
         }
         if (!this.qrphProofFile) {
           this.gcashError = "Select a proof file first.";
+          this.showToast("Select a proof file", "Choose an image/PDF to upload.", "warning");
           return;
         }
 
@@ -1253,10 +1388,11 @@ export default {
         );
 
         this.qrphSubmitted = true;
-        alert("✅ Proof submitted! Admin can check it.");
+        this.showToast("Proof submitted", "Admin can now verify your payment.", "success");
       } catch (err) {
         console.error("uploadQrphProof error:", err.response?.data || err);
         this.gcashError = err.response?.data?.message || err.message || "Failed to upload proof.";
+        this.showToast("Failed to upload proof", this.gcashError, "error");
       } finally {
         this.gcashLoading = false;
       }
@@ -1278,6 +1414,7 @@ export default {
 
         const reservationPayload = {
           schedule_id: Number(this.reservationForm.schedule_id), // ✅ day1 schedule id (even for package)
+          course_id: Number(this.selectedCourse.id), // ✅ ADD THIS
           notes: this.reservationForm.notes || null,
           payment_method,
           requirements_mode: this.requirementsMode, // 'online' or 'walkin'
@@ -1312,13 +1449,17 @@ export default {
           });
         }
 
-        alert("✅ Reservation confirmed! Your slot is locked.");
+        this.showToast("Reservation confirmed!", "Your slot is locked.", "success");
 
         await this.fetchActiveReservation();
         this.resetAll();
       } catch (err) {
         console.error("submitReservationAndUploads error:", err.response?.data || err);
-        alert(err.response?.data?.message || err.message || "❌ Failed. Please try again.");
+        this.showToast(
+          "Reservation failed",
+          err.response?.data?.message || err.message || "Please try again.",
+          "error"
+        );
       } finally {
         this.isSubmitting = false;
       }

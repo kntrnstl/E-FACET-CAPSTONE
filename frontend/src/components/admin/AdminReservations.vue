@@ -258,9 +258,8 @@
             class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
           >
             <option value="PENDING">PENDING</option>
-            <option value="CONFIRMED">CONFIRMED</option>
+            <option value="CONFIRMED" disabled>CONFIRMED (Auto)</option>
             <option value="APPROVED">APPROVED</option>
-            <option value="ACTIVE">ACTIVE</option>
             <option value="DONE">DONE</option>
             <option value="CANCELLED">CANCELLED</option>
           </select>

@@ -20,4 +20,10 @@ router.get("/trainers", tesdaController.getTrainersForTesda);
 router.get("/course-trainers", tesdaController.getTesdaAssignments);
 router.post("/course-trainers", tesdaController.upsertTesdaAssignment);
 
+const {
+  getTesdaCoursesPublic,
+} = require("../controllers/tesdaCourseController");
+router.get("/tesda/courses", getTesdaCoursesPublic);
+
+
 module.exports = router;

@@ -20,10 +20,6 @@
           <span class="ml-2">📝 Enrollment Application</span>
         </router-link>
 
-        <router-link to="/tesda-requirements" :class="linkClass('TesdaRequirements')">
-          <span class="ml-2">📎 Requirements Upload</span>
-        </router-link>
-
         <router-link to="/tesda-schedule" :class="linkClass('TesdaSchedule')">
           <span class="ml-2">🗓️ Training Schedule</span>
         </router-link>
