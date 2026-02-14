@@ -167,6 +167,41 @@ async function resolveCourseFee(conn, courseId, feeOptionCode) {
   }
 }
 
+// 🆕 Helper: Get package info (day2 schedule)
+async function getPackageInfo(conn, day1ScheduleId) {
+  try {
+    const [rows] = await conn.execute(
+      `
+      SELECT 
+        s2.schedule_id AS day2_schedule_id,
+        s2.schedule_date AS day2_date,
+        TIME_FORMAT(s2.start_time, '%H:%i') AS day2_start_time,
+        TIME_FORMAT(s2.end_time, '%H:%i') AS day2_end_time
+      FROM schedules s1
+      JOIN schedules s2 ON s1.package_group_id = s2.package_group_id 
+        AND s2.package_day = 2
+      WHERE s1.schedule_id = ?
+        AND s1.package_day = 1
+        AND s1.package_group_id IS NOT NULL
+      LIMIT 1
+      `,
+      [Number(day1ScheduleId)]
+    );
+
+    if (!rows.length) return null;
+
+    return {
+      day2_schedule_id: rows[0].day2_schedule_id,
+      day2_date: toYMD(rows[0].day2_date),
+      day2_start_time: rows[0].day2_start_time,
+      day2_end_time: rows[0].day2_end_time,
+    };
+  } catch (err) {
+    console.error('getPackageInfo error:', err);
+    return null;
+  }
+}
+
 // ===================== STUDENT: MONTH AVAILABILITY (CALENDAR) =====================
 // GET /api/student/schedules?course_id=1&month=YYYY-MM
 exports.getAvailability = async (req, res) => {
@@ -279,7 +314,7 @@ exports.createReservation = async (req, res) => {
 
     const [schedRows] = await conn.execute(
       `
-      SELECT schedule_id, course_id, schedule_date, start_time, end_time, total_slots, status, instructor_id
+      SELECT schedule_id, course_id, schedule_date, start_time, end_time, total_slots, status, instructor_id, package_group_id, package_day
       FROM schedules
       WHERE schedule_id = ?
       FOR UPDATE
@@ -509,6 +544,13 @@ exports.createReservation = async (req, res) => {
       }
     }
 
+    // 🆕 CHECK IF PACKAGE (2-day)
+    const isPackage = Boolean(sched.package_group_id && Number(sched.package_day) === 1);
+    let packageInfo = null;
+    if (isPackage) {
+      packageInfo = await getPackageInfo(conn, sid);
+    }
+
     await conn.commit();
 
     // 🔥 SEND EMAIL NOTIFICATIONS (non-blocking)
@@ -532,7 +574,11 @@ exports.createReservation = async (req, res) => {
         requirementsMode: reqMode,
         notes: notes || null,
         reservationId,
-        isPackage: false, // Update this if you support packages
+        isPackage,
+        // 🆕 Package data
+        day2Date: packageInfo?.day2_date || null,
+        day2StartTime: packageInfo?.day2_start_time || null,
+        day2EndTime: packageInfo?.day2_end_time || null,
       };
 
       console.log("📧 ============================================");
@@ -541,6 +587,10 @@ exports.createReservation = async (req, res) => {
       console.log("📧 Student Name:", emailData.studentName);
       console.log("📧 Course:", emailData.courseName);
       console.log("📧 Reservation ID:", emailData.reservationId);
+      console.log("📧 Is Package:", emailData.isPackage);
+      if (emailData.isPackage) {
+        console.log("📧 Day 2 Date:", emailData.day2Date);
+      }
       console.log("📧 ============================================");
 
       // Send emails asynchronously (non-blocking)

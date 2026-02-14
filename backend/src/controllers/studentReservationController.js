@@ -1,6 +1,9 @@
 // src/controllers/studentReservationController.js
 const pool = require("../config/database");
 
+// 🔥 ADD THIS: Import email service
+const { sendReservationConfirmation, sendAdminNotification } = require("../services/emailService");
+
 // ✅ these statuses OCCUPY a slot (counted against total_slots)
 const OCCUPYING_STATUSES = ["PENDING", "CONFIRMED", "APPROVED", "ACTIVE"];
 
@@ -18,7 +21,6 @@ const toYMD = (dateLike) => {
 
   return `${y}-${m}-${day}`;
 };
-
 
 // helper: add days to YYYY-MM-DD
 const addDaysYMD = (ymd, days) => {
@@ -51,7 +53,7 @@ function normalizeRequirementsMode(mode) {
   return "walkin";
 }
 
-// ✅ Detect “2-day package” courses by course_code (recommended)
+// ✅ Detect "2-day package" courses by course_code (recommended)
 function isTwoDayCourseByCode(course_code) {
   const code = String(course_code || "")
     .trim()
@@ -339,6 +341,8 @@ exports.getAvailability = async (req, res) => {
  *    student sends schedule_id = day1_schedule_id
  *    backend auto-locks day2 schedule (next day, same time/instructor/course)
  *    inserts 2 reservation rows in ONE transaction
+ * 
+ * 🔥 SENDS EMAIL TO STUDENT + ADMIN!
  */
 exports.createReservation = async (req, res) => {
   const conn = await pool.getConnection();
@@ -451,7 +455,7 @@ exports.createReservation = async (req, res) => {
 
     // ✅ course_code check: is this a 2-day package (TDC / PDC-AB)?
     const [courseRows] = await conn.execute(
-      `SELECT id, course_code FROM courses WHERE id = ? LIMIT 1`,
+      `SELECT id, course_code, course_name, course_fee FROM courses WHERE id = ? LIMIT 1`,
       [course_id],
     );
     const course = courseRows[0] || null;
@@ -769,13 +773,119 @@ exports.createReservation = async (req, res) => {
       );
     }
 
+    // 🔥 8) GET STUDENT INFO FROM DATABASE
+    const [studentRows] = await conn.execute(
+      `SELECT fullname, email FROM users WHERE id = ? LIMIT 1`,
+      [student_id]
+    );
+
+    // 🔥 9) GET INSTRUCTOR NAME
+    let instructorName = "TBA";
+    if (sched.instructor_id) {
+      const [instructorRows] = await conn.execute(
+        `SELECT CONCAT(firstname, ' ', lastname) AS fullname FROM instructors WHERE instructor_id = ? LIMIT 1`,
+        [sched.instructor_id]
+      );
+      if (instructorRows.length) {
+        instructorName = instructorRows[0].fullname;
+      }
+    }
+
     await conn.commit();
+
+    // 🔥 10) SEND EMAIL NOTIFICATIONS (non-blocking, after commit)
+    if (studentRows.length && course) {
+      const student = studentRows[0];
+
+      const emailData = {
+        studentEmail: student.email,
+        studentName: student.fullname,
+        courseName: course.course_name,
+        courseCode: course.course_code || "",
+        scheduleId: sid,
+        date: scheduleDateYMD,
+        startTime: sched.start_time,
+        endTime: sched.end_time,
+        instructor: instructorName,
+        courseFee: Number(course.course_fee || 0),
+        paymentMethod: payMethod,
+        paymentRef: payment_ref || null,
+        requirementsMode: reqMode,
+        notes: notes || null,
+        reservationId: reservation_id,
+        isPackage: isTwoDay,
+        // 🆕 Package Day 2 data
+        day2Date: day2Schedule ? toYMD(day2Schedule.schedule_date) : null,
+        day2StartTime: day2Schedule ? day2Schedule.start_time : null,
+        day2EndTime: day2Schedule ? day2Schedule.end_time : null,
+      };
+
+      console.log("📧 ============================================");
+      console.log("📧 PREPARING TO SEND EMAILS");
+      console.log("📧 Student Email:", emailData.studentEmail);
+      console.log("📧 Student Name:", emailData.studentName);
+      console.log("📧 Course:", emailData.courseName);
+      console.log("📧 Reservation ID:", emailData.reservationId);
+      console.log("📧 Is Package:", emailData.isPackage);
+      if (emailData.isPackage) {
+        console.log("📧 Day 2 Date:", emailData.day2Date);
+      }
+      console.log("📧 ============================================");
+
+      // Send emails asynchronously (non-blocking)
+      setImmediate(() => {
+        console.log("📧 Starting email send process...");
+        
+        Promise.all([
+          sendReservationConfirmation(emailData)
+            .then((result) => {
+              console.log("✅ Student confirmation email sent successfully!");
+              console.log("   Message ID:", result.messageId);
+              return result;
+            })
+            .catch((err) => {
+              console.error("❌ Student email FAILED:");
+              console.error("   Error:", err.message);
+              console.error("   Stack:", err.stack);
+              throw err;
+            }),
+          
+          sendAdminNotification(emailData)
+            .then((result) => {
+              console.log("✅ Admin notification email sent successfully!");
+              console.log("   Message ID:", result.messageId);
+              return result;
+            })
+            .catch((err) => {
+              console.error("❌ Admin email FAILED:");
+              console.error("   Error:", err.message);
+              console.error("   Stack:", err.stack);
+              throw err;
+            }),
+        ])
+          .then(() => {
+            console.log("📧 ============================================");
+            console.log("📧 ALL EMAILS SENT SUCCESSFULLY!");
+            console.log("📧 ============================================");
+          })
+          .catch((err) => {
+            console.error("📧 ============================================");
+            console.error("📧 EMAIL SENDING FAILED");
+            console.error("📧 Error:", err.message);
+            console.error("📧 ============================================");
+          });
+      });
+    } else {
+      console.log("⚠️ WARNING: Cannot send emails - missing student or course data");
+      console.log("   Student rows:", studentRows.length);
+      console.log("   Course data:", course ? "✅" : "❌");
+    }
 
     return res.status(201).json({
       status: "success",
       message: isTwoDay
-        ? "Reservation created (2-day course: Day 1 + Day 2 locked)"
-        : "Reservation created (slot is locked)",
+        ? "Reservation created (2-day course: Day 1 + Day 2 locked). Check your email for confirmation!"
+        : "Reservation created (slot is locked). Check your email for confirmation!",
       data: {
         reservation_id,
         reservation_id_2,
@@ -800,7 +910,7 @@ exports.createReservation = async (req, res) => {
 /**
  * GET /api/student/reservations/active
  *
- * ✅ If active reservation is a 2-day course, we also fetch day2 “sibling”
+ * ✅ If active reservation is a 2-day course, we also fetch day2 "sibling"
  */
 exports.getMyActiveReservation = async (req, res) => {
   try {

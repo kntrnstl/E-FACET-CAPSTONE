@@ -26,7 +26,7 @@ const sendReservationConfirmation = async (emailData) => {
   } = emailData;
 
   const mailOptions = {
-    from: `"Driving School Reservation System" <${process.env.EMAIL_USER}>`,
+    from: `"E-FACET" <${process.env.EMAIL_USER}>`,
     to: studentEmail,
     subject: `✅ Reservation Confirmed - ${courseName} (${courseCode})`,
     html: `
@@ -355,7 +355,282 @@ const sendAdminNotification = async (emailData) => {
   }
 };
 
+/**
+ * Send schedule reminder email to student (1 day before)
+ */
+const sendReminderEmail = async (emailData) => {
+  const {
+    studentEmail,
+    studentName,
+    courseName,
+    courseCode,
+    scheduleId,
+    date,
+    startTime,
+    endTime,
+    instructor,
+    courseFee,
+    paymentMethod,
+    requirementsMode,
+    notes,
+    isPackage,
+    day2Date,
+    day2StartTime,
+    day2EndTime,
+  } = emailData;
+
+  const mailOptions = {
+    from: `"E-FACET" <${process.env.EMAIL_USER}>`,
+    to: studentEmail,
+    subject: `⏰ Reminder: Your Schedule Tomorrow - ${courseName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+          }
+          .content {
+            background: #f9fafb;
+            padding: 30px 20px;
+            border: 1px solid #e5e7eb;
+          }
+          .info-box {
+            background: white;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .info-row:last-child {
+            border-bottom: none;
+          }
+          .label {
+            font-weight: 600;
+            color: #374151;
+          }
+          .value {
+            color: #f59e0b;
+            font-weight: 500;
+          }
+          .package-notice {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+          }
+          .footer {
+            background: #1f2937;
+            color: #9ca3af;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            border-radius: 0 0 10px 10px;
+          }
+          .important {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+          }
+          .reminder-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 700;
+            margin: 15px 0;
+          }
+          .countdown {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+          }
+          .countdown-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #d97706;
+            margin: 10px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 style="margin: 0; font-size: 32px;">⏰ Schedule Reminder</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.95; font-size: 18px;">Your schedule is tomorrow!</p>
+        </div>
+
+        <div class="content">
+          <p>Dear <strong>${studentName}</strong>,</p>
+          
+          <div class="countdown">
+            <p style="margin: 0; font-size: 16px; color: #78350f;">Your scheduled class is:</p>
+            <div class="countdown-text">TOMORROW</div>
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+
+          <p style="font-size: 16px; font-weight: 600; color: #374151;">
+            This is a friendly reminder about your upcoming driving lesson.
+          </p>
+
+          ${isPackage ? `
+            <div class="package-notice">
+              <h3 style="margin-top: 0; color: #f59e0b;">📦 2-Day Package Reminder</h3>
+              <p style="margin: 5px 0;"><strong>Note: This is a 2-day course</strong></p>
+              <p style="margin: 5px 0; font-size: 14px;">Please attend BOTH days to complete the course.</p>
+            </div>
+          ` : ''}
+
+          <div class="info-box">
+            <h3 style="margin-top: 0; color: #f59e0b;">📚 Course Details</h3>
+            <div class="info-row">
+              <span class="label">Course:</span>
+              <span class="value">${courseName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Course Code:</span>
+              <span class="value">${courseCode}</span>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <h3 style="margin-top: 0; color: #f59e0b;">📅 Tomorrow's Schedule ${isPackage ? '- Day 1' : ''}</h3>
+            <div class="info-row">
+              <span class="label">Schedule ID:</span>
+              <span class="value">#${scheduleId}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Date:</span>
+              <span class="value">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Time:</span>
+              <span class="value">${startTime} - ${endTime}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Instructor:</span>
+              <span class="value">${instructor}</span>
+            </div>
+          </div>
+
+          ${isPackage && day2Date ? `
+            <div class="info-box">
+              <h3 style="margin-top: 0; color: #f59e0b;">📅 Day 2 Schedule</h3>
+              <div class="info-row">
+                <span class="label">Date:</span>
+                <span class="value">${new Date(day2Date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Time:</span>
+                <span class="value">${day2StartTime} - ${day2EndTime}</span>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="important">
+            <h4 style="margin-top: 0; color: #dc2626;">📋 Important Reminders</h4>
+            
+            ${paymentMethod === 'CASH' ? `
+              <p style="margin: 8px 0;">
+                💰 <strong>Payment:</strong> Bring cash payment of 
+                <strong style="color: #15803d;">₱${Number(courseFee).toLocaleString()}</strong>
+              </p>
+            ` : `
+              <p style="margin: 8px 0;">
+                💳 <strong>Payment:</strong> ${paymentMethod} payment verified
+              </p>
+            `}
+            
+            ${requirementsMode === 'walkin' ? `
+              <p style="margin: 8px 0;">
+                📄 <strong>Requirements:</strong> Don't forget to bring all required documents
+              </p>
+            ` : `
+              <p style="margin: 8px 0;">
+                📤 <strong>Requirements:</strong> Already uploaded online
+              </p>
+            `}
+            
+            <p style="margin: 8px 0;">
+              ⏰ <strong>Be on time:</strong> Please arrive 10-15 minutes before ${startTime}
+            </p>
+            
+            <p style="margin: 8px 0;">
+              📱 <strong>Contact:</strong> If you need to cancel or reschedule, please inform us immediately
+            </p>
+          </div>
+
+          ${notes ? `
+            <div class="info-box">
+              <h3 style="margin-top: 0; color: #f59e0b;">📝 Your Notes</h3>
+              <p style="margin: 5px 0; font-style: italic;">${notes}</p>
+            </div>
+          ` : ''}
+
+          <div style="margin: 30px 0; padding: 20px; background: #fef3c7; border-radius: 8px; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 18px; color: #78350f; font-weight: 600;">
+              See you tomorrow!
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              We're looking forward to your class. Drive safely! 🚗
+            </p>
+          </div>
+
+        </div>
+
+        <div class="footer">
+          <p style="margin: 0 0 10px 0;">This is an automated reminder. Please do not reply to this email.</p>
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} Driving School Reservation System. All rights reserved.</p>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const transporter = require('../config/email.config');
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Reminder email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Error sending reminder email:', error);
+    throw error;
+  }
+};
+
+// ADD THIS TO THE MODULE.EXPORTS AT THE BOTTOM:
 module.exports = {
   sendReservationConfirmation,
   sendAdminNotification,
+  sendReminderEmail,  // ← ADD THIS LINE
 };

@@ -78,9 +78,12 @@ const studentRoutes = require("./src/routes/studentRoutes");
 const instructorRoutes = require("./src/routes/instructorRoutes");
 const trainerRoutes = require("./src/routes/trainerRoutes");
 const adminTesdaRoutes = require("./src/routes/adminTesdaRoutes");
-const tesdaPublicRoutes = require("./src/routes/tesdaPublicRoutes"); // ✅ FIXED PATH
+const tesdaPublicRoutes = require("./src/routes/tesdaPublicRoutes");
 
 const studentResCtrl = require("./src/controllers/studentReservationController");
+
+// ⏰ Import reminder scheduler
+const { initializeReminderScheduler } = require("./src/jobs/reminderScheduler");
 
 // ==============================
 // Auto mark DONE reservations
@@ -109,6 +112,13 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use("/api/trainer", trainerRoutes);
+
+// ==============================
+// ⏰ Initialize Reminder Scheduler
+// Sends email reminders 1 day before schedule
+// Runs at 8:00 AM and 8:00 PM Manila time daily
+// ==============================
+initializeReminderScheduler();
 
 // ==============================
 // DEBUG: check session
