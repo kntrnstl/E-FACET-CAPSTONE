@@ -1,6 +1,25 @@
 const pool = require("../config/database.js");
 const bcrypt = require("bcryptjs");
 
+// --------------------
+// helpers
+// --------------------
+async function hasColumn(table, col) {
+  try {
+    const [rows] = await pool.query(`SHOW COLUMNS FROM ${table} LIKE ?`, [col]);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function getDisableColumn() {
+  // support either column name
+  if (await hasColumn("users", "is_disabled")) return "is_disabled";
+  if (await hasColumn("users", "disabled")) return "disabled";
+  return null;
+}
+
 // helper: get track_id from track_code
 async function getTrackIdByCode(trackCode) {
   const code = String(trackCode || "")
@@ -21,7 +40,6 @@ async function getTrackIdByCode(trackCode) {
 const login = async (req, res) => {
   try {
     const { username, password, track } = req.body;
-    // ✅ track comes from frontend: 'tesda' or 'driving' (optional but recommended)
 
     if (!username || !password) {
       return res.status(400).json({
@@ -30,16 +48,21 @@ const login = async (req, res) => {
       });
     }
 
-    const identity = username.trim();
+    const identity = String(username).trim();
     const requestedTrack = String(track || "")
       .trim()
       .toLowerCase(); // tesda/driving
 
-    // ✅ join tracks so we can return track_code + enforce access
+    const disableCol = await getDisableColumn();
+    const disabledSelect = disableCol
+      ? `, u.${disableCol} AS is_disabled`
+      : `, 0 AS is_disabled`;
+
     const [users] = await pool.execute(
       `SELECT 
          u.id, u.username, u.password, u.role, u.fullname, u.track_id,
          t.track_code
+         ${disabledSelect}
        FROM users u
        LEFT JOIN tracks t ON t.track_id = u.track_id
        WHERE u.username = ? OR u.email = ?
@@ -56,6 +79,15 @@ const login = async (req, res) => {
 
     const user = users[0];
 
+    // ✅ block disabled accounts
+    if (Number(user?.is_disabled || 0) === 1) {
+      return res.status(403).json({
+        status: "error",
+        message:
+          "Your account has been disabled. Please contact the administrator.",
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -65,11 +97,9 @@ const login = async (req, res) => {
     }
 
     // ✅ ENFORCE: student/user must match track
-    // Admin/instructor can enter their own dashboards regardless of track.
     if (user.role === "user" || user.role === "student") {
-      const dbTrack = (user.track_code || "").toLowerCase();
+      const dbTrack = String(user.track_code || "").toLowerCase();
 
-      // if frontend sent track, enforce it matches DB
       if (
         requestedTrack &&
         (requestedTrack === "tesda" || requestedTrack === "driving")
@@ -81,18 +111,20 @@ const login = async (req, res) => {
           });
         }
       }
-
-      // If user has no track set yet (legacy), default to driving (optional)
-      // Better: set it in DB properly.
     }
 
-    // Session
+    // regenerate session
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => (err ? reject(err) : resolve()));
+    });
+
+    // Session data
     req.session.user_id = user.id;
     req.session.username = user.username;
     req.session.fullname = user.fullname;
     req.session.role = user.role;
 
-    // ✅ also store track for student/user
+    // store track for student/user
     if (user.role === "user" || user.role === "student") {
       req.session.track_code = user.track_code || requestedTrack || null;
       req.session.track_id = user.track_id || null;
@@ -129,6 +161,10 @@ const login = async (req, res) => {
               ? "/tesda-dashboard"
               : "/student-dashboard";
 
+    // ensure session saved
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => (err ? reject(err) : resolve()));
+    });
 
     return res.json({
       status: "success",
@@ -251,9 +287,17 @@ const checkInstructor = (req, res) => {
 // --------------------
 const signup = async (req, res) => {
   try {
-    const { fullname, username, email, contact, password, confirm, track } =
-      req.body;
-    // ✅ track should be 'tesda' or 'driving' from frontend
+    const {
+      fullname,
+      username,
+      email,
+      contact,
+      password,
+      confirm,
+      track,
+      gender,
+      birthday,
+    } = req.body;
 
     const fullnameTrimmed = (fullname || "").trim();
     const usernameTrimmed = (username || "").trim();
@@ -263,6 +307,11 @@ const signup = async (req, res) => {
       .trim()
       .toLowerCase();
 
+    const genderNormalized = String(gender || "")
+      .trim()
+      .toLowerCase();
+    const birthdayTrimmed = String(birthday || "").trim();
+
     const errors = {};
 
     if (!fullnameTrimmed) errors.fullname = "Full name is required";
@@ -271,11 +320,32 @@ const signup = async (req, res) => {
     if (!password) errors.password = "Password is required";
     if (!confirm) errors.confirm = "Confirm password is required";
 
+    if (genderNormalized !== "male" && genderNormalized !== "female") {
+      errors.gender = "Gender is required (male or female)";
+    }
+
+    if (!birthdayTrimmed) {
+      errors.birthday = "Birthday is required";
+    } else {
+      const isYmd = /^\d{4}-\d{2}-\d{2}$/.test(birthdayTrimmed);
+      const parsed = isYmd ? new Date(`${birthdayTrimmed}T00:00:00`) : null;
+      const isValidDate = parsed && !Number.isNaN(parsed.getTime());
+
+      if (!isYmd || !isValidDate) {
+        errors.birthday = "Birthday must be a valid date";
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (parsed > today) {
+          errors.birthday = "Birthday cannot be in the future";
+        }
+      }
+    }
+
     if (password && confirm && password !== confirm) {
       errors.confirm = "Passwords do not match";
     }
 
-    // ✅ require track to prevent "one acc both portals"
     if (trackCode !== "tesda" && trackCode !== "driving") {
       errors.track = "Track is required (tesda or driving)";
     }
@@ -307,18 +377,41 @@ const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✅ insert with track_id
+    const disableCol = await getDisableColumn();
+
+    const cols = [
+      "fullname",
+      "username",
+      "email",
+      "password",
+      "contact",
+      "role",
+      "track_id",
+      "gender",
+      "birthday",
+    ];
+    const vals = [
+      fullnameTrimmed,
+      usernameTrimmed,
+      emailTrimmed,
+      hashedPassword,
+      contactTrimmed,
+      "user",
+      trackId,
+      genderNormalized,
+      birthdayTrimmed,
+    ];
+
+    if (disableCol) {
+      cols.push(disableCol);
+      vals.push(0); // enabled by default
+    }
+
+    const placeholders = cols.map(() => "?").join(", ");
+
     const [result] = await pool.execute(
-      "INSERT INTO users (fullname, username, email, password, contact, role, track_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        fullnameTrimmed,
-        usernameTrimmed,
-        emailTrimmed,
-        hashedPassword,
-        contactTrimmed,
-        "user",
-        trackId,
-      ],
+      `INSERT INTO users (${cols.join(", ")}) VALUES (${placeholders})`,
+      vals,
     );
 
     return res.json({
@@ -332,6 +425,8 @@ const signup = async (req, res) => {
         contact: contactTrimmed,
         role: "user",
         track: trackCode,
+        gender: genderNormalized,
+        birthday: birthdayTrimmed,
       },
     });
   } catch (error) {
@@ -386,17 +481,37 @@ const signupInstructor = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // instructors don't need track_id (NULL)
+    const disableCol = await getDisableColumn();
+
+    const cols = [
+      "fullname",
+      "username",
+      "email",
+      "password",
+      "contact",
+      "role",
+      "track_id",
+    ];
+    const vals = [
+      fullnameTrimmed,
+      usernameTrimmed,
+      emailTrimmed,
+      hashedPassword,
+      contactTrimmed,
+      "instructor",
+      null,
+    ];
+
+    if (disableCol) {
+      cols.push(disableCol);
+      vals.push(0); // enabled by default
+    }
+
+    const placeholders = cols.map(() => "?").join(", ");
+
     const [result] = await pool.execute(
-      "INSERT INTO users (fullname, username, email, password, contact, role, track_id) VALUES (?, ?, ?, ?, ?, ?, NULL)",
-      [
-        fullnameTrimmed,
-        usernameTrimmed,
-        emailTrimmed,
-        hashedPassword,
-        contactTrimmed,
-        "instructor",
-      ],
+      `INSERT INTO users (${cols.join(", ")}) VALUES (${placeholders})`,
+      vals,
     );
 
     return res.json({

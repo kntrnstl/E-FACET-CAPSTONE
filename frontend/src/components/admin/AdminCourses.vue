@@ -863,12 +863,12 @@ export default {
     // ✅ DRIVING ASSIGNMENTS
     // ===============================
     const fetchDrivingInstructors = async () => {
-      const res = await api.get("/admin/driving/instructors");
+      const res = await api.get("/admin/driving-instructors");
       instructors.value = res.data?.data ?? [];
     };
 
     const fetchDrivingAssignments = async () => {
-      const res = await api.get("/admin/driving/course-instructors");
+      const res = await api.get("/admin/driving-course-instructors");
       const rows = res.data?.data ?? [];
 
       const map = {};
@@ -904,7 +904,7 @@ export default {
       if (!instructorId) return;
 
       try {
-        await api.post("/admin/driving/course-instructors", {
+        await api.post("/admin/driving-course-instructors", {
           course_id: courseId,
           instructor_id: instructorId,
         });

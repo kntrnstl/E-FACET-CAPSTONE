@@ -14,11 +14,11 @@
 
       <!-- Track title -->
       <div class="text-center mb-6">
-        <div 
+        <div
           class="inline-flex items-center px-3 py-1 rounded-full mb-1"
           :class="track === 'tesda' ? 'bg-blue-500/20' : 'bg-green-500/20'"
         >
-          <div 
+          <div
             class="w-2 h-2 rounded-full mr-2"
             :class="track === 'tesda' ? 'bg-blue-400' : 'bg-green-400'"
           ></div>
@@ -39,8 +39,8 @@
         v-if="message.text"
         :class="[
           'mb-5 p-3 rounded-lg text-sm font-medium border',
-          message.type === 'success' 
-            ? 'bg-green-500/10 border-green-500/30 text-green-300' 
+          message.type === 'success'
+            ? 'bg-green-500/10 border-green-500/30 text-green-300'
             : 'bg-red-500/10 border-red-500/30 text-red-300'
         ]"
       >
@@ -124,6 +124,45 @@
           </p>
         </div>
 
+        <!-- Gender -->
+        <div>
+          <label class="block text-xs text-gray-300 font-medium mb-1">Gender: *</label>
+          <select
+            v-model="formData.gender"
+            required
+            class="w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition"
+            :class="track === 'tesda' ? 'focus:ring-blue-500' : 'focus:ring-green-500'"
+          >
+            <option value="" disabled>Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <p v-if="errors.gender" class="text-red-400 text-xs mt-1 flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            {{ errors.gender }}
+          </p>
+        </div>
+
+        <!-- Birthday -->
+        <div>
+          <label class="block text-xs text-gray-300 font-medium mb-1">Birthday: *</label>
+          <input
+            type="date"
+            v-model="formData.birthday"
+            required
+            class="w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-gray-100 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition"
+            :class="track === 'tesda' ? 'focus:ring-blue-500' : 'focus:ring-green-500'"
+          />
+          <p v-if="errors.birthday" class="text-red-400 text-xs mt-1 flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            {{ errors.birthday }}
+          </p>
+        </div>
+
         <!-- Password -->
         <div>
           <label class="block text-xs text-gray-300 font-medium mb-1">Password: *</label>
@@ -167,8 +206,8 @@
           type="submit"
           :disabled="isLoading"
           class="w-full text-white py-3 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
-          :class="track === 'tesda' 
-            ? 'bg-blue-600 hover:bg-blue-700' 
+          :class="track === 'tesda'
+            ? 'bg-blue-600 hover:bg-blue-700'
             : 'bg-green-600 hover:bg-green-700'"
         >
           <span v-if="isLoading" class="flex items-center justify-center">
@@ -212,14 +251,14 @@
       <div class="mt-6 pt-5 border-t border-white/10">
         <p class="text-center text-xs text-gray-400 mb-3">
           Already have an account?
-          <a href="#" @click.prevent="goToLogin" 
+          <a href="#" @click.prevent="goToLogin"
              class="text-white font-medium hover:underline transition">
             Login here
           </a>
         </p>
 
         <p class="text-center text-xs text-gray-500">
-          <a href="#" @click.prevent="goToLanding" 
+          <a href="#" @click.prevent="goToLanding"
              class="hover:text-gray-300 transition inline-flex items-center">
             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -244,6 +283,8 @@ export default {
         username: '',
         email: '',
         contact: '',
+        gender: '',
+        birthday: '',
         password: '',
         confirm: ''
       },
@@ -310,6 +351,20 @@ export default {
         this.errors.password = 'Password is required';
         isValid = false;
       }
+
+      if (!this.formData.gender) {
+        this.errors.gender = 'Gender is required';
+        isValid = false;
+      } else if (this.formData.gender !== 'male' && this.formData.gender !== 'female') {
+        this.errors.gender = 'Gender must be male or female';
+        isValid = false;
+      }
+
+      if (!this.formData.birthday) {
+        this.errors.birthday = 'Birthday is required';
+        isValid = false;
+      }
+
       if (!this.formData.confirm) {
         this.errors.confirm = 'Confirm password is required';
         isValid = false;
@@ -354,6 +409,8 @@ export default {
           username: this.formData.username.trim(),
           email: this.formData.email.trim(),
           contact: this.formData.contact.trim(),
+          gender: this.formData.gender,
+          birthday: this.formData.birthday,
           password: this.formData.password,
           confirm: this.formData.confirm,
 

@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 
+// controllers
 const enrollmentAppController = require("../controllers/enrollmentApplicationController");
 const classAssignmentController = require("../controllers/classAssignmentController");
 const classController = require("../controllers/classController");
@@ -12,237 +13,340 @@ const courseController = require("../controllers/courseController");
 const courseRequirementsController = require("../controllers/courseRequirementsController");
 const instructorController = require("../controllers/instructorController");
 
-const { requireAuth, requireAdmin } = require("../middlewares/authMiddleware");
-
 const adminStudentsController = require("../controllers/adminStudentsController");
+
+// your QRPH controller (list/confirm/reject)
 const adminQrphVerifyController = require("../controllers/adminQrphVerifyController");
 
-const {
-  getDrivingInstructors,
-  getDrivingCourseInstructors,
-  upsertDrivingCourseInstructor,
-} = require("../controllers/drivingInstructorAssignController");
+// driving assign controller
+const drivingAssignController = require("../controllers/drivingInstructorAssignController");
 
-function mustBeFn(label, fn) {
-  if (typeof fn !== "function") {
-    console.log("❌ NOT A FUNCTION:", label, "=>", fn);
-    throw new Error(`[ROUTES] ${label} must be a function`);
+// NEW users controller
+const adminUsersController = require("../controllers/adminUsersController");
+
+// middlewares
+const { requireAuth, requireAdmin } = require("../middlewares/authMiddleware");
+
+// ---------- SAFE ROUTE REGISTER ----------
+function safe(method, path, handler, label) {
+  if (typeof handler !== "function") {
+    console.warn(
+      `⚠ Skipped route ${method.toUpperCase()} ${path} (handler missing): ${label}`,
+    );
+    return;
   }
+  router[method](path, handler);
 }
-
-// check controllers you use in routes
-mustBeFn("courseController.listCourses", courseController.listCourses);
-mustBeFn("courseController.createCourse", courseController.createCourse);
-mustBeFn("courseController.updateCourse", courseController.updateCourse);
-mustBeFn("courseController.deleteCourse", courseController.deleteCourse);
-
-mustBeFn(
-  "courseRequirementsController.getRequirementsByCourseAdmin",
-  courseRequirementsController.getRequirementsByCourseAdmin,
-);
-mustBeFn(
-  "courseRequirementsController.addRequirement",
-  courseRequirementsController.addRequirement,
-);
-mustBeFn(
-  "courseRequirementsController.updateRequirement",
-  courseRequirementsController.updateRequirement,
-);
-mustBeFn(
-  "courseRequirementsController.deleteRequirement",
-  courseRequirementsController.deleteRequirement,
-);
-
-mustBeFn(
-  "enrollmentAppController.listApplicationsAdmin",
-  enrollmentAppController.listApplicationsAdmin,
-);
-mustBeFn(
-  "enrollmentAppController.updateApplicationStatusAdmin",
-  enrollmentAppController.updateApplicationStatusAdmin,
-);
-
-mustBeFn(
-  "classAssignmentController.assignClassToApplication",
-  classAssignmentController.assignClassToApplication,
-);
-
-mustBeFn("classController.getClasses", classController.getClasses);
-mustBeFn("classController.createClass", classController.createClass);
-mustBeFn("classController.updateClass", classController.updateClass);
-mustBeFn("classController.deleteClass", classController.deleteClass);
-
-mustBeFn("scheduleController.getSchedules", scheduleController.getSchedules);
-mustBeFn(
-  "scheduleController.createSchedule",
-  scheduleController.createSchedule,
-);
-mustBeFn(
-  "scheduleController.updateSchedule",
-  scheduleController.updateSchedule,
-);
-mustBeFn(
-  "scheduleController.deleteSchedule",
-  scheduleController.deleteSchedule,
-);
-
-mustBeFn(
-  "reservationController.listReservationsAdmin",
-  reservationController.listReservationsAdmin,
-);
-mustBeFn(
-  "reservationController.updateReservationStatusAdmin",
-  reservationController.updateReservationStatusAdmin,
-);
-mustBeFn(
-  "reservationController.createWalkInReservation",
-  reservationController.createWalkInReservation,
-);
-
-// ✅ NEW: required by your Vue -> GET /api/admin/reservations/:id/details
-mustBeFn(
-  "reservationController.getReservationDetailsAdmin",
-  reservationController.getReservationDetailsAdmin,
-);
-
-mustBeFn("paymentController.listPayments", paymentController.listPayments);
-mustBeFn("paymentController.updatePayment", paymentController.updatePayment);
-
-mustBeFn(
-  "instructorController.getInstructors",
-  instructorController.getInstructors,
-);
-mustBeFn(
-  "instructorController.createInstructor",
-  instructorController.createInstructor,
-);
-mustBeFn(
-  "instructorController.updateInstructor",
-  instructorController.updateInstructor,
-);
-mustBeFn(
-  "instructorController.deleteInstructor",
-  instructorController.deleteInstructor,
-);
-
-mustBeFn(
-  "adminStudentsController.listDrivingStudentsConfirmed",
-  adminStudentsController.listDrivingStudentsConfirmed,
-);
 
 // ================= MIDDLEWARE =================
 router.use(requireAuth);
 router.use(requireAdmin);
 
 // ================= DASHBOARD =================
-router.get("/dashboard", (req, res) => {
-  res.json({
-    status: "success",
-    message: "Admin dashboard",
-    user: {
-      id: req.session.user_id,
-      fullname: req.session.fullname,
-      role: req.session.role,
-    },
-  });
-});
+safe(
+  "get",
+  "/dashboard",
+  (req, res) => {
+    res.json({
+      status: "success",
+      message: "Admin dashboard",
+      user: {
+        id: req.session.user_id,
+        fullname: req.session.fullname,
+        role: req.session.role,
+      },
+    });
+  },
+  "inline dashboard handler",
+);
+
+// ================= USER MANAGEMENT (NEW) =================
+safe(
+  "get",
+  "/users",
+  adminUsersController.listUsers,
+  "adminUsersController.listUsers",
+);
+safe(
+  "get",
+  "/users/:id",
+  adminUsersController.getUserById,
+  "adminUsersController.getUserById",
+);
+safe(
+  "post",
+  "/users",
+  adminUsersController.createUser,
+  "adminUsersController.createUser",
+);
+safe(
+  "put",
+  "/users/:id",
+  adminUsersController.updateUser,
+  "adminUsersController.updateUser",
+);
+
+// Disable/Enable (soft block)
+safe(
+  "put",
+  "/users/:id/disable",
+  adminUsersController.disableUser,
+  "adminUsersController.disableUser",
+);
+safe(
+  "put",
+  "/users/:id/enable",
+  adminUsersController.enableUser,
+  "adminUsersController.enableUser",
+);
+
+safe(
+  "delete",
+  "/users/:id",
+  adminUsersController.deleteUser,
+  "adminUsersController.deleteUser",
+);
 
 // ================= INSTRUCTORS =================
-router.get("/instructors", instructorController.getInstructors);
-router.post("/instructors", instructorController.createInstructor);
-router.put("/instructors/:id", instructorController.updateInstructor);
-router.delete("/instructors/:id", instructorController.deleteInstructor);
+safe(
+  "get",
+  "/instructors",
+  instructorController.getInstructors,
+  "instructorController.getInstructors",
+);
+safe(
+  "post",
+  "/instructors",
+  instructorController.createInstructor,
+  "instructorController.createInstructor",
+);
+safe(
+  "put",
+  "/instructors/:id",
+  instructorController.updateInstructor,
+  "instructorController.updateInstructor",
+);
+safe(
+  "delete",
+  "/instructors/:id",
+  instructorController.deleteInstructor,
+  "instructorController.deleteInstructor",
+);
 
 // ================= COURSES =================
-router.get("/courses", courseController.listCourses);
-router.post("/courses", courseController.createCourse);
-router.put("/courses/:id", courseController.updateCourse);
-router.delete("/courses/:id", courseController.deleteCourse);
+safe(
+  "get",
+  "/courses",
+  courseController.listCourses,
+  "courseController.listCourses",
+);
+safe(
+  "post",
+  "/courses",
+  courseController.createCourse,
+  "courseController.createCourse",
+);
+safe(
+  "put",
+  "/courses/:id",
+  courseController.updateCourse,
+  "courseController.updateCourse",
+);
+safe(
+  "delete",
+  "/courses/:id",
+  courseController.deleteCourse,
+  "courseController.deleteCourse",
+);
 
 // ================= COURSE REQUIREMENTS =================
-router.get(
+safe(
+  "get",
   "/courses/:courseId/requirements",
   courseRequirementsController.getRequirementsByCourseAdmin,
+  "courseRequirementsController.getRequirementsByCourseAdmin",
 );
-router.post(
+safe(
+  "post",
   "/courses/:courseId/requirements",
   courseRequirementsController.addRequirement,
+  "courseRequirementsController.addRequirement",
 );
-router.put(
-  "/requirements/:requirementId",
+safe(
+  "put",
+  "/requirements/:id",
   courseRequirementsController.updateRequirement,
+  "courseRequirementsController.updateRequirement",
 );
-router.delete(
-  "/requirements/:requirementId",
+safe(
+  "delete",
+  "/requirements/:id",
   courseRequirementsController.deleteRequirement,
+  "courseRequirementsController.deleteRequirement",
 );
 
 // ================= ENROLLMENT APPLICATIONS =================
-router.get("/applications", enrollmentAppController.listApplicationsAdmin);
-router.put(
-  "/applications/:applicationId",
-  enrollmentAppController.updateApplicationStatusAdmin,
+safe(
+  "get",
+  "/applications",
+  enrollmentAppController.listApplicationsAdmin,
+  "enrollmentAppController.listApplicationsAdmin",
 );
-router.post(
-  "/applications/:applicationId/assign-class",
+safe(
+  "put",
+  "/applications/:id/status",
+  enrollmentAppController.updateApplicationStatusAdmin,
+  "enrollmentAppController.updateApplicationStatusAdmin",
+);
+
+// ================= CLASS ASSIGNMENT =================
+safe(
+  "post",
+  "/applications/:id/assign-class",
   classAssignmentController.assignClassToApplication,
+  "classAssignmentController.assignClassToApplication",
 );
 
 // ================= CLASSES =================
-router.get("/classes", classController.getClasses);
-router.post("/classes", classController.createClass);
-router.put("/classes/:classId", classController.updateClass);
-router.delete("/classes/:classId", classController.deleteClass);
+safe(
+  "get",
+  "/classes",
+  classController.getClasses,
+  "classController.getClasses",
+);
+safe(
+  "post",
+  "/classes",
+  classController.createClass,
+  "classController.createClass",
+);
+safe(
+  "put",
+  "/classes/:id",
+  classController.updateClass,
+  "classController.updateClass",
+);
+safe(
+  "delete",
+  "/classes/:id",
+  classController.deleteClass,
+  "classController.deleteClass",
+);
 
-// ================= SCHEDULES =================
-router.get("/schedules", scheduleController.getSchedules);
-router.post("/schedules", scheduleController.createSchedule);
-router.put("/schedules/:id", scheduleController.updateSchedule);
-router.delete("/schedules/:id", scheduleController.deleteSchedule);
-
+// ================= SCHEDULE =================
+safe(
+  "get",
+  "/schedules",
+  scheduleController.getSchedules,
+  "scheduleController.getSchedules",
+);
+safe(
+  "post",
+  "/schedules",
+  scheduleController.createSchedule,
+  "scheduleController.createSchedule",
+);
+safe(
+  "put",
+  "/schedules/:id",
+  scheduleController.updateSchedule,
+  "scheduleController.updateSchedule",
+);
+safe(
+  "delete",
+  "/schedules/:id",
+  scheduleController.deleteSchedule,
+  "scheduleController.deleteSchedule",
+);
 
 // ================= RESERVATIONS =================
-router.get("/reservations", reservationController.listReservationsAdmin);
-
-// ✅ NEW: View Full Details endpoint (fixes your 404)
-router.get(
-  "/reservations/:reservationId/details",
-  reservationController.getReservationDetailsAdmin,
+safe(
+  "get",
+  "/reservations",
+  reservationController.listReservationsAdmin,
+  "reservationController.listReservationsAdmin",
 );
-
-router.put(
-  "/reservations/:reservationId",
+safe(
+  "put",
+  "/reservations/:id/status",
   reservationController.updateReservationStatusAdmin,
+  "reservationController.updateReservationStatusAdmin",
 );
-router.post(
+safe(
+  "post",
   "/reservations/walkin",
   reservationController.createWalkInReservation,
+  "reservationController.createWalkInReservation",
+);
+safe(
+  "get",
+  "/reservations/:id/details",
+  reservationController.getReservationDetailsAdmin,
+  "reservationController.getReservationDetailsAdmin",
 );
 
-// ================= PAYMENTS (GENERAL) =================
-router.get("/payments", paymentController.listPayments);
-router.put("/payments/:paymentId", paymentController.updatePayment);
+// ================= PAYMENTS (generic) =================
+safe(
+  "get",
+  "/payments",
+  paymentController.listPayments,
+  "paymentController.listPayments",
+);
+safe(
+  "put",
+  "/payments/:id",
+  paymentController.updatePayment,
+  "paymentController.updatePayment",
+);
 
-// ================= QRPH PAYMENTS (VERIFY) =================
-router.get("/payments/qrph", adminQrphVerifyController.listQrphPayments);
-router.post(
+// ================= QRPH PAYMENTS (your real endpoints) =================
+safe(
+  "get",
+  "/payments/qrph",
+  adminQrphVerifyController.listQrphPayments,
+  "adminQrphVerifyController.listQrphPayments",
+);
+
+safe(
+  "post",
   "/payments/qrph/:paymentRef/confirm",
   adminQrphVerifyController.confirmQrphPayment,
-);
-router.post(
-  "/payments/qrph/:paymentRef/reject",
-  adminQrphVerifyController.rejectQrphPayment,
+  "adminQrphVerifyController.confirmQrphPayment",
 );
 
-// ================= STUDENTS =================
-router.get(
-  "/students/driving",
+safe(
+  "post",
+  "/payments/qrph/:paymentRef/reject",
+  adminQrphVerifyController.rejectQrphPayment,
+  "adminQrphVerifyController.rejectQrphPayment",
+);
+
+// ================= ADMIN STUDENTS (Driving confirmed) =================
+safe(
+  "get",
+  "/students/confirmed",
   adminStudentsController.listDrivingStudentsConfirmed,
+  "adminStudentsController.listDrivingStudentsConfirmed",
 );
 
 // ================= DRIVING INSTRUCTOR ASSIGN =================
-router.get("/driving/instructors", getDrivingInstructors);
-router.get("/driving/course-instructors", getDrivingCourseInstructors);
-router.post("/driving/course-instructors", upsertDrivingCourseInstructor);
+safe(
+  "get",
+  "/driving-instructors",
+  drivingAssignController.getDrivingInstructors,
+  "drivingAssignController.getDrivingInstructors",
+);
+safe(
+  "get",
+  "/driving-course-instructors",
+  drivingAssignController.getDrivingCourseInstructors,
+  "drivingAssignController.getDrivingCourseInstructors",
+);
+safe(
+  "post",
+  "/driving-course-instructors",
+  drivingAssignController.upsertDrivingCourseInstructor,
+  "drivingAssignController.upsertDrivingCourseInstructor",
+);
 
 module.exports = router;

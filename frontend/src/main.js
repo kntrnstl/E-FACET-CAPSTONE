@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // Import ALL the icons your component uses
 import {
+  // Your existing icons
   faUser,
   faHome,
   faBars,
@@ -47,6 +48,12 @@ import {
   faFile,
   faCalendar,
   faArrowRight,
+
+  // NEW ICONS for enhanced modal
+  faTimes, // For close button
+  faChevronRight, // For course action buttons
+  faListUl, // For course list section title
+  faRoad, // For driving courses section title
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import brand icons
@@ -59,7 +66,7 @@ import {
 
 // Register ALL icons
 library.add(
-  // Solid icons
+  // Your existing icons
   faUser,
   faHome,
   faBars,
@@ -94,6 +101,12 @@ library.add(
   faFile,
   faCalendar,
   faArrowRight,
+
+  // NEW ICONS
+  faTimes,
+  faChevronRight,
+  faListUl,
+  faRoad,
 
   // Brand icons
   faFacebookF,

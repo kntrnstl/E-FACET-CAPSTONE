@@ -33,7 +33,7 @@
           <span class="ml-2">👨‍🎓 Students</span>
         </router-link>
 
-        <!-- ✅ NEW: Reservations -->
+        <!-- ✅ Reservations -->
         <router-link
           to="/admin-reservations"
           :class="[
@@ -117,6 +117,19 @@
           ]"
         >
           <span class="ml-2">🧠 Mock Exam Management</span>
+        </router-link>
+
+        <!-- ✅ NEW: USER MANAGEMENT (after Mock Exam) -->
+        <router-link
+          to="/admin-users"
+          :class="[
+            'flex items-center px-5 py-2 rounded-r-full',
+            $route.name === 'AdminUsers'
+              ? 'bg-green-100 text-green-700 font-medium'
+              : 'hover:bg-gray-200'
+          ]"
+        >
+          <span class="ml-2">👥 User Management</span>
         </router-link>
 
         <router-link
@@ -214,33 +227,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-aside {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e0 transparent;
-}
-
-aside::-webkit-scrollbar {
-  width: 6px;
-}
-
-aside::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-aside::-webkit-scrollbar-thumb {
-  background-color: #cbd5e0;
-  border-radius: 3px;
-}
-
-.router-link-exact-active {
-  background-color: #d1fae5;
-  color: #047857;
-  font-weight: 500;
-}
-
-.router-link-active:hover:not(.router-link-exact-active) {
-  background-color: #f3f4f6;
-}
-</style>

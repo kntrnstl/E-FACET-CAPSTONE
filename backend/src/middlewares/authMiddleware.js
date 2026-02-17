@@ -1,7 +1,22 @@
-// src/middlewares/authMiddleware.js
+// backend/src/middlewares/authMiddleware.js
+
+function getSessionUserId(req) {
+  // support different possible keys just in case
+  const v = req?.session?.user_id ?? req?.session?.userId ?? req?.session?.id;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function getSessionRole(req) {
+  return String(req?.session?.role || "")
+    .trim()
+    .toLowerCase();
+}
 
 const requireAuth = (req, res, next) => {
-  if (req.session && req.session.user_id) return next();
+  const userId = getSessionUserId(req);
+  if (userId) return next();
+
   return res.status(401).json({
     status: "error",
     message: "Not authenticated",
@@ -10,8 +25,20 @@ const requireAuth = (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (req.session && req.session.user_id && req.session.role === "admin")
-    return next();
+  const userId = getSessionUserId(req);
+  const role = getSessionRole(req);
+
+  if (userId && role === "admin") return next();
+
+  // if not logged in -> 401, else -> 403
+  if (!userId) {
+    return res.status(401).json({
+      status: "error",
+      message: "Not authenticated",
+      redirect: "/login",
+    });
+  }
+
   return res.status(403).json({
     status: "error",
     message: "Admin access required",
@@ -20,8 +47,19 @@ const requireAdmin = (req, res, next) => {
 };
 
 const requireInstructor = (req, res, next) => {
-  if (req.session && req.session.user_id && req.session.role === "instructor")
-    return next();
+  const userId = getSessionUserId(req);
+  const role = getSessionRole(req);
+
+  if (userId && role === "instructor") return next();
+
+  if (!userId) {
+    return res.status(401).json({
+      status: "error",
+      message: "Not authenticated",
+      redirect: "/login",
+    });
+  }
+
   return res.status(403).json({
     status: "error",
     message: "Instructor access required",
@@ -31,12 +69,18 @@ const requireInstructor = (req, res, next) => {
 
 // optional: for students/users
 const requireStudent = (req, res, next) => {
-  if (
-    req.session &&
-    req.session.user_id &&
-    (req.session.role === "student" || req.session.role === "user")
-  )
-    return next();
+  const userId = getSessionUserId(req);
+  const role = getSessionRole(req);
+
+  if (userId && (role === "student" || role === "user")) return next();
+
+  if (!userId) {
+    return res.status(401).json({
+      status: "error",
+      message: "Not authenticated",
+      redirect: "/login",
+    });
+  }
 
   return res.status(403).json({
     status: "error",
@@ -46,8 +90,18 @@ const requireStudent = (req, res, next) => {
 };
 
 const requireTrainer = (req, res, next) => {
-  if (req.session && req.session.user_id && req.session.role === "trainer")
-    return next();
+  const userId = getSessionUserId(req);
+  const role = getSessionRole(req);
+
+  if (userId && role === "trainer") return next();
+
+  if (!userId) {
+    return res.status(401).json({
+      status: "error",
+      message: "Not authenticated",
+      redirect: "/login",
+    });
+  }
 
   return res.status(403).json({
     status: "error",

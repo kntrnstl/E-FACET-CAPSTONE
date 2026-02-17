@@ -16,264 +16,226 @@
         <h2 class="text-lg font-bold text-green-800">👨‍🎓 Students Management</h2>
         <button 
           @click="openAddModal"
-          class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md flex items-center gap-2 shadow-sm"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
         >
-          ➕ Add New Student
+          ➕ Add Student
         </button>
       </div>
 
       <!-- Filters -->
-      <div class="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+      <div class="flex flex-wrap gap-4 mb-6">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Course</label>
           <select 
             v-model="selectedCourse" 
             class="w-48 p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
           >
-<option value="">All Courses</option>
-<option v-for="c in courses" :key="c.id" :value="c.course_name">
-  {{ c.course_name }}
-</option>
+            <option value="">All Courses</option>
+            <option v-for="c in courses" :key="c.id" :value="c.course_name">
+              {{ c.course_name }}
+            </option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select 
-            v-model="selectedStatus" 
+            v-model="selectedStatus.val" 
             class="w-40 p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
           >
-            <option value="">All Status</option>
             <option value="active">Active</option>
-            <option value="pending">Pending</option>
             <option value="inactive">Inactive</option>
+            <option value="all">All</option>
           </select>
         </div>
 
-        <div class="flex items-end gap-2">
-          <button 
-            @click="clearFilters"
-            class="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium"
+        <div class="ml-auto">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+          <select 
+            v-model="sortBy"
+            class="w-40 p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
           >
-            Clear
-          </button>
+            <option value="name">Name</option>
+            <option value="email">Email</option>
+            <option value="course">Course</option>
+            <option value="status">Status</option>
+          </select>
         </div>
-      </div>
-
-      <!-- Loading -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-green-700"></div>
-        <p class="mt-3 text-gray-600">Loading students...</p>
       </div>
 
       <!-- Table -->
-      <div v-else class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-          <div class="text-sm text-gray-600">
-            Showing {{ filteredStudents.length }} of {{ students.length }} students
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600">Sort by:</span>
-            <select 
-              v-model="sortBy"
-              class="text-sm border rounded px-2 py-1"
-            >
-              <option value="name">Name A-Z</option>
-              <option value="nameDesc">Name Z-A</option>
-              <option value="date">Recently Added</option>
-              <option value="status">Status</option>
-            </select>
-          </div>
+      <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+        <div v-if="loading" class="p-6 text-center text-gray-500">
+          Loading students...
         </div>
-        
-        <table class="min-w-full border border-gray-200 text-sm rounded-lg overflow-hidden">
-          <thead class="bg-green-800 text-white">
+
+        <table v-else class="w-full text-sm">
+          <thead class="bg-green-50 text-green-900">
             <tr>
-              <th class="py-3 px-4 text-left font-medium">Student</th>
-              <th class="py-3 px-4 text-left font-medium">Course</th>
-              <th class="py-3 px-4 text-left font-medium">Status</th>
-              <th class="py-3 px-4 text-left font-medium">Actions</th>
+              <th class="text-left p-3">Name</th>
+              <th class="text-left p-3">Email</th>
+              <th class="text-left p-3">Course</th>
+              <th class="text-left p-3">Status</th>
+              <th class="text-right p-3">Actions</th>
             </tr>
           </thead>
+
           <tbody>
             <tr 
-              v-for="student in filteredStudents" 
-              :key="student.id" 
-              class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+              v-for="s in filteredStudents" 
+              :key="s.id"
+              class="border-t border-gray-100 hover:bg-gray-50"
             >
-              <td class="py-3 px-4 flex items-center gap-3">
-                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm">
-                  {{ getInitials(student.name) }}
+              <td class="p-3 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-green-100 text-green-800 flex items-center justify-center font-semibold">
+                  {{ getInitials(s.name) }}
                 </div>
-                <div>
-                  <p class="font-medium">{{ student.name }}</p>
-                  <p class="text-xs text-gray-500">{{ student.email }}</p>
+                <div class="font-medium text-gray-900">
+                  {{ s.name }}
                 </div>
               </td>
-              <td class="py-3 px-4">{{ student.course }}</td>
-              <td class="py-3 px-4">
-                <span :class="getStatusClass(student.status)">
-                  {{ formatStatus(student.status) }}
+
+              <td class="p-3 text-gray-700">{{ s.email }}</td>
+              <td class="p-3 text-gray-700">{{ s.course }}</td>
+
+              <td class="p-3">
+                <span 
+                  :class="[
+                    'px-2 py-1 rounded-full text-xs font-semibold',
+                    s.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-700'
+                  ]"
+                >
+                  {{ s.status }}
                 </span>
               </td>
-              <td class="py-3 px-4">
+
+              <td class="p-3 text-right">
                 <button 
-                  @click="viewStudent(student)" 
-                  class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
-                >
-                  View
-                </button>
-                <button 
-                  @click="editStudent(student)" 
-                  class="text-yellow-600 hover:text-yellow-800 text-sm font-medium mr-3"
+                  @click="openEditModal(s)"
+                  class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700 mr-2"
                 >
                   Edit
                 </button>
                 <button 
-                  @click="confirmDelete(student)"
-                  class="text-red-600 hover:text-red-800 text-sm font-medium"
+                  @click="openDeleteModal(s)"
+                  class="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white hover:bg-red-700"
                 >
                   Delete
                 </button>
               </td>
             </tr>
-            <tr v-if="filteredStudents.length === 0">
-              <td colspan="4" class="py-8 text-center text-gray-500">
-                No students found
+
+            <tr v-if="!filteredStudents.length">
+              <td colspan="5" class="p-6 text-center text-gray-500">
+                No students found.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="filteredStudents.length > 0" class="mt-6 flex justify-between items-center">
-        <div class="text-sm text-gray-600">
-          Page 1 of 1 • {{ filteredStudents.length }} items
-        </div>
-        <div class="flex gap-1">
-          <button class="px-3 py-1 border rounded text-sm hover:bg-gray-50">← Previous</button>
-          <button class="px-3 py-1 bg-green-700 text-white rounded text-sm">1</button>
-          <button class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next →</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add/Edit Modal -->
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg w-full max-w-md">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold text-green-800">
-              {{ isEditing ? 'Edit Student' : 'Add New Student' }}
+      <!-- Add/Edit Modal -->
+      <div 
+        v-if="showModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      >
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">
+              {{ isEditing ? "Edit Student" : "Add Student" }}
             </h3>
+            <button @click="closeModal" class="text-gray-500 hover:text-gray-800">✖</button>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Name</label>
+              <input 
+                v-model="formData.name"
+                type="text"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Email</label>
+              <input 
+                v-model="formData.email"
+                type="email"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Course</label>
+              <input 
+                v-model="formData.course"
+                type="text"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Status</label>
+              <select 
+                v-model="formData.status"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6">
             <button 
               @click="closeModal"
-              class="text-gray-400 hover:text-gray-600 text-xl"
+              class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
             >
-              ✕
+              Cancel
+            </button>
+
+            <button 
+              @click="submitStudent"
+              class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 text-sm"
+            >
+              {{ isEditing ? "Save Changes" : "Add Student" }}
             </button>
           </div>
-          
-          <form @submit.prevent="saveStudent">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input 
-                  type="text" 
-                  v-model="formData.name"
-                  required
-                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
-                  placeholder="Enter student name"
-                >
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input 
-                  type="email" 
-                  v-model="formData.email"
-                  required
-                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
-                  placeholder="Enter student email"
-                >
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Course</label>
-                <select 
-                  v-model="formData.course"
-                  required
-                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
-                >
-                  <option value="" disabled>Select a course</option>
-                  <option value="Driving NC II">Driving NC II</option>
-                  <option value="ATDC NC I">ATDC NC I</option>
-                  <option value="Electrical Installation NC II">Electrical Installation NC II</option>
-                  <option value="Cookery NC II">Cookery NC II</option>
-                  <option value="Bread & Pastry">Bread & Pastry</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select 
-                  v-model="formData.status"
-                  required
-                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="flex justify-end gap-2 mt-6">
-              <button 
-                type="button"
-                @click="closeModal"
-                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit"
-                class="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-800 text-sm font-medium"
-              >
-                {{ isEditing ? 'Update' : 'Save' }}
-              </button>
-            </div>
-          </form>
         </div>
       </div>
-    </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg w-full max-w-md p-6">
-        <div class="mb-4">
-          <h3 class="text-lg font-bold text-red-600 mb-2">Confirm Deletion</h3>
-          <p class="text-gray-600">
-            Are you sure you want to delete <span class="font-semibold">{{ studentToDelete?.name }}</span>? 
-            This action cannot be undone.
+      <!-- Delete Modal -->
+      <div 
+        v-if="showDeleteModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      >
+        <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">Delete Student</h3>
+          <p class="text-sm text-gray-600">
+            Are you sure you want to delete <b>{{ studentToDelete?.name }}</b>?
           </p>
-        </div>
-        <div class="flex justify-end gap-2">
-          <button 
-            @click="cancelDelete"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button 
-            @click="deleteStudent"
-            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
-          >
-            Delete
-          </button>
+
+          <div class="flex justify-end gap-2 mt-6">
+            <button 
+              @click="closeDeleteModal"
+              class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+            >
+              Cancel
+            </button>
+
+            <button 
+              @click="confirmDelete"
+              class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
+
     </div>
   </AdminLayout>
 </template>
@@ -295,19 +257,23 @@ export default {
   setup() {
     // State
     const students = ref([]);
-    const loading = ref(true);
+    const loading = ref(false);
 
     const searchQuery = ref("");
     const selectedCourse = ref(""); // optional, but we focus Driving
-    const selectedStatus = ref("");
+    const courses = ref([]);
+    const selectedStatus = reactive({
+      val: "active",
+    });
     const sortBy = ref("name");
 
-    // (Optional UI modals) — keep them, but we’ll disable add/edit/delete for now
+    // Modals
     const showModal = ref(false);
     const showDeleteModal = ref(false);
     const isEditing = ref(false);
     const studentToDelete = ref(null);
 
+    // Form
     const formData = reactive({
       id: null,
       name: "",
@@ -316,15 +282,25 @@ export default {
       status: "active",
     });
 
+    const fetchCourses = async () => {
+      try {
+        const res = await api.get("/admin/courses");
+        courses.value = res.data?.data || [];
+      } catch (err) {
+        console.error("fetchCourses error:", err);
+        courses.value = [];
+      }
+    };
+
     // ✅ Fetch confirmed driving students from backend
     const fetchStudents = async () => {
       loading.value = true;
       try {
         // We focus driving; backend already filters by CONFIRMED + Driving
-        const res = await api.get("/admin/students/driving", {
+        const res = await api.get("/admin/students/confirmed", {
           params: {
             q: searchQuery.value || "",
-            status: selectedStatus.value || "active",
+            status: selectedStatus.val || "active",
             // course param optional; you can force driving keyword
             course: "Driving",
           },
@@ -335,12 +311,11 @@ export default {
           id: x.id,
           name: x.name || "—",
           email: x.email || "—",
-          course: x.course || "—",
+          course: x.course || x.course_name || "Driving",
           status: x.status || "active",
-          enrollmentDate: x.enrollmentDate || null,
         }));
       } catch (err) {
-        console.error("fetchStudents error:", err.response?.data || err);
+        console.error("fetchStudents error:", err);
         students.value = [];
       } finally {
         loading.value = false;
@@ -348,100 +323,129 @@ export default {
     };
 
     const filteredStudents = computed(() => {
-      // Since backend already filtered to CONFIRMED + driving,
-      // we only do local filtering for course dropdown if you still want it.
-      let result = [...students.value];
+      let arr = [...students.value];
 
-      if (selectedCourse.value) {
-        result = result.filter((s) => s.course === selectedCourse.value);
+      // search
+      const q = (searchQuery.value || "").toLowerCase().trim();
+      if (q) {
+        arr = arr.filter((s) =>
+          [s.name, s.email, s.course, s.status]
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
+        );
       }
 
-      // Sorting
-      result.sort((a, b) => {
-        switch (sortBy.value) {
-          case "name":
-            return (a.name || "").localeCompare(b.name || "");
-          case "nameDesc":
-            return (b.name || "").localeCompare(a.name || "");
-          case "date":
-            return new Date(b.enrollmentDate || 0) - new Date(a.enrollmentDate || 0);
-          case "status":
-            return (a.status || "").localeCompare(b.status || "");
-          default:
-            return 0;
-        }
-      });
+      // status filter
+      if (selectedStatus.val && selectedStatus.val !== "all") {
+        arr = arr.filter((s) => s.status === selectedStatus.val);
+      }
 
-      return result;
+      // course filter (optional)
+      if (selectedCourse.value) {
+        arr = arr.filter((s) => s.course === selectedCourse.value);
+      }
+
+      // sort
+      const key = sortBy.value;
+      arr.sort((a, b) => String(a[key] || "").localeCompare(String(b[key] || "")));
+
+      return arr;
     });
 
     const getInitials = (name) => {
-      const str = String(name || "").trim();
-      if (!str || str === "—") return "NA";
-      return str
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
+      const parts = String(name || "").trim().split(/\s+/);
+      const a = parts[0]?.[0] || "";
+      const b = parts[1]?.[0] || "";
+      return (a + b).toUpperCase() || "—";
     };
 
-    const getStatusClass = (status) => {
-      switch (String(status || "").toLowerCase()) {
-        case "active":
-          return "text-green-600 font-semibold";
-        case "pending":
-          return "text-yellow-600 font-semibold";
-        case "inactive":
-          return "text-red-600 font-semibold";
-        default:
-          return "text-gray-600";
+    // Modal handlers
+    const openAddModal = () => {
+      isEditing.value = false;
+      formData.id = null;
+      formData.name = "";
+      formData.email = "";
+      formData.course = "Driving";
+      formData.status = "active";
+      showModal.value = true;
+    };
+
+    const openEditModal = (s) => {
+      isEditing.value = true;
+      formData.id = s.id;
+      formData.name = s.name;
+      formData.email = s.email;
+      formData.course = s.course;
+      formData.status = s.status;
+      showModal.value = true;
+    };
+
+    const closeModal = () => {
+      showModal.value = false;
+    };
+
+    const openDeleteModal = (s) => {
+      studentToDelete.value = s;
+      showDeleteModal.value = true;
+    };
+
+    const closeDeleteModal = () => {
+      studentToDelete.value = null;
+      showDeleteModal.value = false;
+    };
+
+    // Actions
+    const submitStudent = async () => {
+      try {
+        if (!formData.name || !formData.email) return;
+
+        if (isEditing.value) {
+          await api.put(`/admin/students/${formData.id}`, {
+            name: formData.name,
+            email: formData.email,
+            course: formData.course,
+            status: formData.status,
+          });
+        } else {
+          await api.post(`/admin/students`, {
+            name: formData.name,
+            email: formData.email,
+            course: formData.course,
+            status: formData.status,
+          });
+        }
+
+        closeModal();
+        fetchStudents();
+      } catch (err) {
+        console.error("submitStudent error:", err);
       }
     };
 
-    const formatStatus = (status) => {
-      const s = String(status || "");
-      return s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+    const confirmDelete = async () => {
+      try {
+        if (!studentToDelete.value?.id) return;
+        await api.delete(`/admin/students/${studentToDelete.value.id}`);
+        closeDeleteModal();
+        fetchStudents();
+      } catch (err) {
+        console.error("confirmDelete error:", err);
+      }
     };
 
-    const clearFilters = async () => {
-      searchQuery.value = "";
-      selectedCourse.value = "";
-      selectedStatus.value = "";
-      sortBy.value = "name";
-      await fetchStudents();
-    };
-
-    // ✅ actions (view ok, edit/delete optional)
-    const viewStudent = (student) => {
-      alert(
-        `Student: ${student.name}\n` +
-          `Email: ${student.email}\n` +
-          `Course: ${student.course}\n` +
-          `Status: ${student.status}\n` +
-          `Confirmed Since: ${student.enrollmentDate || "—"}`
-      );
-    };
-
-    // For now: disable add/edit/delete dahil ang source of truth mo is users + confirmed reservation
-    const openAddModal = () => {
-      alert("Students here are auto-from CONFIRMED reservations. Add student via signup + reservation.");
-    };
-    const editStudent = () => {
-      alert("Edit is disabled for now (source is users table). We can add edit later.");
-    };
-    const confirmDelete = () => {
-      alert("Delete is disabled for now. If you want, we can implement soft-delete in users.");
-    };
-    const closeModal = () => (showModal.value = false);
-
-    onMounted(fetchStudents);
+    // Init
+    onMounted(() => {
+      fetchCourses();
+      fetchStudents();
+    });
 
     return {
       students,
       loading,
       searchQuery,
       selectedCourse,
+      courses,
       selectedStatus,
       sortBy,
       showModal,
@@ -452,17 +456,14 @@ export default {
       filteredStudents,
 
       getInitials,
-      getStatusClass,
-      formatStatus,
-      clearFilters,
-
       openAddModal,
-      editStudent,
-      viewStudent,
-      confirmDelete,
+      openEditModal,
       closeModal,
-
-      fetchStudents, // optional: add refresh button if you want
+      openDeleteModal,
+      closeDeleteModal,
+      submitStudent,
+      confirmDelete,
+      fetchStudents,
     };
   },
 };

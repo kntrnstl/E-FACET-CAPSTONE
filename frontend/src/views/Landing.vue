@@ -5,7 +5,7 @@
       <img src="/background.png" alt="Background" class="background-image" />
       <div class="background-overlay"></div>
     </div>
-    
+
     <!-- Navigation -->
     <nav class="navbar">
       <div class="nav-container">
@@ -18,7 +18,7 @@
             <span class="logo-sub">Enrollment Portal</span>
           </div>
         </div>
-        
+
         <div class="nav-links">
           <a href="#home" class="nav-link active">Home</a>
           <a href="#programs" class="nav-link">Programs</a>
@@ -26,7 +26,7 @@
           <a href="#how-it-works" class="nav-link">How It Works</a>
           <a href="#faq" class="nav-link">FAQ</a>
         </div>
-        
+
         <div class="nav-actions">
           <div class="dropdown auth-dropdown">
             <button class="btn btn-outline dropdown-toggle">
@@ -44,7 +44,7 @@
               </router-link>
             </div>
           </div>
-          
+
           <div class="dropdown auth-dropdown">
             <button class="btn btn-primary dropdown-toggle">
               <font-awesome-icon icon="fas fa-user-plus" />
@@ -62,12 +62,12 @@
             </div>
           </div>
         </div>
-        
+
         <button class="mobile-menu-btn" @click="toggleMobileMenu">
           <font-awesome-icon icon="fas fa-bars" />
         </button>
       </div>
-      
+
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="mobile-menu">
         <a href="#home" class="mobile-nav-link" @click="toggleMobileMenu">
@@ -90,7 +90,7 @@
           <font-awesome-icon icon="fas fa-question-circle" />
           FAQ
         </a>
-        
+
         <!-- Mobile Authentication Options -->
         <div class="mobile-auth-section">
           <h3 class="mobile-auth-title">TESDA Programs</h3>
@@ -104,7 +104,7 @@
               TESDA Sign Up
             </router-link>
           </div>
-          
+
           <h3 class="mobile-auth-title">Driving Courses</h3>
           <div class="mobile-auth-actions">
             <router-link to="/login?track=driving" class="btn btn-outline btn-small">
@@ -128,28 +128,29 @@
             <span class="badge-dot"></span>
             <span>Official Enrollment System</span>
           </div>
-          
+
           <h1 class="hero-title">
             Training Made
             <span class="highlight">Organized</span>
-            <br>
+            <br />
             Enrollment Made
             <span class="highlight">Faster</span>
           </h1>
-          
+
           <p class="hero-description">
-            A complete digital solution for TESDA and Driving programs. 
-            Streamline requirements, track schedules, take assessments, 
+            A complete digital solution for TESDA and Driving programs.
+            Streamline requirements, track schedules, take assessments,
             and get certificates — all in one platform.
           </p>
-          
-          <!-- Quick Authentication Buttons -->
-          <div class="quick-auth">
-            <div class="quick-auth-group">
+
+          <!-- Quick Sign Up / Login (2 boxes side-by-side) -->
+          <div class="quick-auth-grid">
+            <div class="quick-auth-box">
               <h3 class="quick-auth-title">
                 <font-awesome-icon icon="fas fa-graduation-cap" />
                 TESDA Programs
               </h3>
+              <p class="quick-auth-sub">Create an account for TESDA training courses.</p>
               <div class="quick-auth-actions">
                 <router-link to="/login?track=tesda" class="btn btn-outline btn-small">
                   <font-awesome-icon icon="fas fa-sign-in-alt" />
@@ -161,12 +162,13 @@
                 </router-link>
               </div>
             </div>
-            
-            <div class="quick-auth-group">
+
+            <div class="quick-auth-box">
               <h3 class="quick-auth-title">
                 <font-awesome-icon icon="fas fa-car" />
                 Driving Courses
               </h3>
+              <p class="quick-auth-sub">Create an account for driving course enrollment.</p>
               <div class="quick-auth-actions">
                 <router-link to="/login?track=driving" class="btn btn-outline btn-small">
                   <font-awesome-icon icon="fas fa-sign-in-alt" />
@@ -179,7 +181,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="hero-stats">
             <div class="stat">
               <div class="stat-number">5,000+</div>
@@ -195,22 +197,19 @@
             </div>
           </div>
         </div>
-        
+
         <div class="hero-visual">
-          <!-- Dashboard Preview - Centered and Fixed -->
+          <!-- Dashboard Preview -->
           <div class="dashboard-preview">
             <div class="dashboard-header">
               <div class="dashboard-dots">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
               </div>
               <div class="dashboard-title">Student Dashboard</div>
               <div class="dashboard-badge">Live</div>
             </div>
-            
+
             <div class="dashboard-content">
-              <!-- Enrollment Progress -->
               <div class="progress-section">
                 <div class="progress-header">
                   <span>Enrollment Progress</span>
@@ -220,8 +219,7 @@
                   <div class="progress-fill" :style="{ width: '75%' }"></div>
                 </div>
               </div>
-              
-              <!-- Quick Stats -->
+
               <div class="quick-stats">
                 <div class="stat-item">
                   <div class="stat-icon docs">
@@ -232,7 +230,7 @@
                     <div class="stat-label">Documents</div>
                   </div>
                 </div>
-                
+
                 <div class="stat-item">
                   <div class="stat-icon sessions">
                     <font-awesome-icon icon="fas fa-calendar-check" />
@@ -242,7 +240,7 @@
                     <div class="stat-label">Sessions</div>
                   </div>
                 </div>
-                
+
                 <div class="stat-item">
                   <div class="stat-icon exams">
                     <font-awesome-icon icon="fas fa-file-signature" />
@@ -253,8 +251,7 @@
                   </div>
                 </div>
               </div>
-              
-              <!-- Recent Activity -->
+
               <div class="recent-activity">
                 <div class="activity-title">Recent Activity</div>
                 <div class="activity-item">
@@ -268,8 +265,7 @@
               </div>
             </div>
           </div>
-          
-          <!-- Floating Feature Cards - Clean Design -->
+
           <div class="floating-card card-1">
             <div class="floating-icon">
               <font-awesome-icon icon="fas fa-cloud-upload-alt" />
@@ -279,7 +275,7 @@
               <p>Submit requirements quickly</p>
             </div>
           </div>
-          
+
           <div class="floating-card card-2">
             <div class="floating-icon">
               <font-awesome-icon icon="fas fa-chart-line" />
@@ -289,7 +285,7 @@
               <p>Monitor your journey</p>
             </div>
           </div>
-          
+
           <div class="floating-card card-3">
             <div class="floating-icon">
               <font-awesome-icon icon="fas fa-certificate" />
@@ -313,7 +309,7 @@
             Select from our accredited training programs and begin your path to success
           </p>
         </div>
-        
+
         <div class="programs-grid">
           <!-- TESDA Program -->
           <div class="program-card">
@@ -325,20 +321,19 @@
                 <span class="badge-text">Government Accredited</span>
               </div>
             </div>
-            
+
             <h3 class="program-title">TESDA Programs</h3>
             <p class="program-description">
               Technical Education and Skills Development Authority certified courses with national recognition and job placement assistance.
             </p>
-            
+
             <ul class="program-features">
               <li><font-awesome-icon icon="fas fa-check-circle" /> Nationally recognized certificates</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Industry-standard training</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Employment assistance</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Scholarship opportunities</li>
             </ul>
-            
-            <!-- TESDA Authentication -->
+
             <div class="program-auth">
               <h4 class="auth-title">Get Started with TESDA</h4>
               <div class="auth-actions">
@@ -352,23 +347,23 @@
                 </router-link>
               </div>
             </div>
-            
+
             <div class="program-actions">
-              <router-link to="/programs/tesda" class="btn btn-primary">
+              <button class="btn btn-primary" @click="openCoursesModal('tesda')">
                 <font-awesome-icon icon="fas fa-list" />
                 View Courses
-              </router-link>
+              </button>
               <a href="#" class="btn-link">
                 <font-awesome-icon icon="fas fa-info-circle" />
                 Learn More
               </a>
             </div>
           </div>
-          
-          <!-- Driving Program (Featured) -->
+
+          <!-- Driving Program -->
           <div class="program-card featured">
             <div class="featured-badge">Most Popular</div>
-            
+
             <div class="program-header">
               <div class="program-icon driving">
                 <font-awesome-icon icon="fas fa-car" />
@@ -377,20 +372,19 @@
                 <span class="badge-text">LTO Accredited</span>
               </div>
             </div>
-            
+
             <h3 class="program-title">Driving Courses</h3>
             <p class="program-description">
               Comprehensive driver training programs with theoretical lessons and practical driving sessions for all vehicle categories.
             </p>
-            
+
             <ul class="program-features">
               <li><font-awesome-icon icon="fas fa-check-circle" /> Professional instructors</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Modern training vehicles</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> LTO-accredited certificates</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Flexible schedules</li>
             </ul>
-            
-            <!-- Driving Course Authentication -->
+
             <div class="program-auth">
               <h4 class="auth-title">Start Driving Course</h4>
               <div class="auth-actions">
@@ -404,19 +398,19 @@
                 </router-link>
               </div>
             </div>
-            
+
             <div class="program-actions">
-              <router-link to="/programs/driving" class="btn btn-primary">
+              <button class="btn btn-primary" @click="openCoursesModal('driving')">
                 <font-awesome-icon icon="fas fa-list" />
                 View Courses
-              </router-link>
+              </button>
               <a href="#" class="btn-link">
                 <font-awesome-icon icon="fas fa-info-circle" />
                 Learn More
               </a>
             </div>
           </div>
-          
+
           <!-- Corporate Program -->
           <div class="program-card">
             <div class="program-header">
@@ -427,19 +421,19 @@
                 <span class="badge-text">Group Discounts</span>
               </div>
             </div>
-            
+
             <h3 class="program-title">Corporate Training</h3>
             <p class="program-description">
               Customized training solutions for organizations and corporate teams with flexible scheduling and group rates.
             </p>
-            
+
             <ul class="program-features">
               <li><font-awesome-icon icon="fas fa-check-circle" /> Customized curriculum</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Flexible scheduling</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> Group discounts</li>
               <li><font-awesome-icon icon="fas fa-check-circle" /> On-site training</li>
             </ul>
-            
+
             <div class="program-actions">
               <router-link to="/contact" class="btn btn-primary">
                 <font-awesome-icon icon="fas fa-phone-alt" />
@@ -455,7 +449,7 @@
       </div>
     </section>
 
-    <!-- Features Section -->
+    <!-- Features Section - FIXED: Centered icons -->
     <section id="features" class="features">
       <div class="section-container">
         <div class="section-header">
@@ -465,51 +459,63 @@
             Our comprehensive system covers every aspect of your training journey
           </p>
         </div>
-        
+
         <div class="features-grid">
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-file-upload" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-file-upload" />
+              </div>
             </div>
             <h3>Document Upload</h3>
             <p>Securely upload and manage all your requirements in one place with real-time validation.</p>
           </div>
-          
+
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-calendar-alt" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-calendar-alt" />
+              </div>
             </div>
             <h3>Schedule Management</h3>
             <p>View and manage your training schedules, set reminders, and never miss a session.</p>
           </div>
-          
+
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-chart-bar" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-chart-bar" />
+              </div>
             </div>
             <h3>Progress Tracking</h3>
             <p>Monitor your progress with detailed analytics and performance reports.</p>
           </div>
-          
+
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-file-signature" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-file-signature" />
+              </div>
             </div>
             <h3>Mock Exams</h3>
             <p>Practice with simulated exams to prepare for your actual assessments.</p>
           </div>
-          
+
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-clipboard-check" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-clipboard-check" />
+              </div>
             </div>
             <h3>Attendance System</h3>
             <p>Digital attendance tracking with QR code check-ins for accurate records.</p>
           </div>
-          
+
           <div class="feature-item">
-            <div class="feature-icon">
-              <font-awesome-icon icon="fas fa-certificate" />
+            <div class="feature-icon-wrapper">
+              <div class="feature-icon">
+                <font-awesome-icon icon="fas fa-certificate" />
+              </div>
             </div>
             <h3>Certificate Generation</h3>
             <p>Automatically generate and download certificates upon course completion.</p>
@@ -518,7 +524,7 @@
       </div>
     </section>
 
-    <!-- How It Works -->
+    <!-- How It Works - UPDATED with your design -->
     <section id="how-it-works" class="how-it-works">
       <div class="section-container">
         <div class="section-header">
@@ -528,7 +534,7 @@
             Follow these simple steps to complete your training journey
           </p>
         </div>
-        
+
         <div class="steps-container">
           <div class="step">
             <div class="step-number">01</div>
@@ -538,9 +544,7 @@
             <h3>Register Account</h3>
             <p>Create your account and choose your desired program</p>
           </div>
-          
-          <div class="step-line"></div>
-          
+
           <div class="step">
             <div class="step-number">02</div>
             <div class="step-icon">
@@ -549,9 +553,7 @@
             <h3>Upload Documents</h3>
             <p>Submit required documents for verification</p>
           </div>
-          
-          <div class="step-line"></div>
-          
+
           <div class="step">
             <div class="step-number">03</div>
             <div class="step-icon">
@@ -560,9 +562,7 @@
             <h3>Attend Sessions</h3>
             <p>Follow your schedule and attend training sessions</p>
           </div>
-          
-          <div class="step-line"></div>
-          
+
           <div class="step">
             <div class="step-number">04</div>
             <div class="step-icon">
@@ -572,7 +572,7 @@
             <p>Complete requirements and receive your certificate</p>
           </div>
         </div>
-        
+
         <div class="process-visual">
           <div class="process-line"></div>
           <div class="process-point point-1"></div>
@@ -583,45 +583,44 @@
       </div>
     </section>
 
-    <!-- CTA Section -->
+    <!-- CTA - UPDATED with your design -->
     <section class="cta">
+      <div class="logo-watermark">
+        <div class="logo-box-large">
+          <img src="/facet-logo.png" alt="FACET" class="logo-img-large" />
+        </div>
+      </div>
       <div class="cta-container">
-        <div class="cta-content">
-          <div class="logo-watermark">
-            <div class="logo-box-large">
-              <img src="/facet-logo.png" alt="FACET" class="logo-img-large" />
+        <h2>Ready to Start Your Training Journey?</h2>
+        <p>Join thousands of successful graduates who transformed their careers with E-FACET.</p>
+
+        <div class="cta-actions">
+          <div class="dropdown auth-dropdown">
+            <button class="btn btn-primary btn-large dropdown-toggle">
+              <font-awesome-icon icon="fas fa-user-plus" />
+              Create Free Account
+            </button>
+            <div class="dropdown-menu">
+              <router-link to="/signup?track=tesda" class="dropdown-item">
+                <font-awesome-icon icon="fas fa-graduation-cap" />
+                TESDA Account
+              </router-link>
+              <router-link to="/signup?track=driving" class="dropdown-item">
+                <font-awesome-icon icon="fas fa-car" />
+                Driving Course Account
+              </router-link>
             </div>
           </div>
-          
-          <h2>Ready to Start Your Training Journey?</h2>
-          <p>Join thousands of successful graduates who transformed their careers with E-FACET.</p>
-          <div class="cta-actions">
-            <div class="dropdown auth-dropdown">
-              <button class="btn btn-primary btn-large dropdown-toggle">
-                <font-awesome-icon icon="fas fa-user-plus" />
-                Create Free Account
-              </button>
-              <div class="dropdown-menu">
-                <router-link to="/signup?track=tesda" class="dropdown-item">
-                  <font-awesome-icon icon="fas fa-graduation-cap" />
-                  TESDA Account
-                </router-link>
-                <router-link to="/signup?track=driving" class="dropdown-item">
-                  <font-awesome-icon icon="fas fa-car" />
-                  Driving Course Account
-                </router-link>
-              </div>
-            </div>
-            <a href="tel:+1234567890" class="btn btn-outline btn-large">
-              <font-awesome-icon icon="fas fa-phone-alt" />
-              Call for Assistance
-            </a>
-          </div>
+
+          <a href="tel:+1234567890" class="btn btn-outline btn-large">
+            <font-awesome-icon icon="fas fa-phone-alt" />
+            Call for Assistance
+          </a>
         </div>
       </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer - UPDATED with your design -->
     <footer class="footer">
       <div class="footer-container">
         <div class="footer-main">
@@ -645,7 +644,7 @@
               <a href="#" class="social-link"><font-awesome-icon :icon="['fab', 'youtube']" /></a>
             </div>
           </div>
-          
+
           <div class="footer-links">
             <div class="footer-column">
               <h3>Platform</h3>
@@ -654,7 +653,7 @@
               <a href="#how-it-works">How It Works</a>
               <a href="#faq">FAQs</a>
             </div>
-            
+
             <div class="footer-column">
               <h3>Program Access</h3>
               <a href="/login?track=tesda">
@@ -670,7 +669,7 @@
                 <font-awesome-icon icon="fas fa-user-plus" /> Driving Sign Up
               </a>
             </div>
-            
+
             <div class="footer-column">
               <h3>Contact</h3>
               <a href="tel:+1234567890">
@@ -688,7 +687,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="footer-bottom">
           <p>&copy; {{ currentYear }} E-FACET Enrollment System. All rights reserved.</p>
           <div class="footer-legal">
@@ -698,45 +697,249 @@
         </div>
       </div>
     </footer>
+
+    <!-- Enhanced Courses Modal with Scrollable Content -->
+    <transition name="modal-fade">
+      <div v-if="coursesModalOpen" class="modal-overlay" @click.self="closeCoursesModal">
+        <transition name="modal-zoom">
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <!-- Modal Header -->
+            <div class="modal-head">
+              <div class="modal-title">
+                <div class="modal-icon" :class="activeCourseTab">
+                  <font-awesome-icon
+                    :icon="activeCourseTab === 'tesda' ? 'fas fa-graduation-cap' : 'fas fa-car'"
+                  />
+                </div>
+                <div>
+                  <h3>{{ activeCourseTab === 'tesda' ? 'TESDA Courses' : 'Driving Courses' }}</h3>
+                  <p>
+                    {{
+                      activeCourseTab === 'tesda'
+                        ? 'Browse our comprehensive TESDA-accredited programs'
+                        : 'Explore our LTO-accredited driving courses'
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <button class="modal-close" @click="closeCoursesModal" aria-label="Close">
+                <font-awesome-icon icon="fas fa-times" />
+              </button>
+            </div>
+
+            <!-- Modal Tabs -->
+            <div class="modal-tabs">
+              <button 
+                class="modal-tab" 
+                :class="{ active: activeCourseTab === 'tesda' }" 
+                @click="activeCourseTab = 'tesda'"
+              >
+                <font-awesome-icon icon="fas fa-graduation-cap" />
+                TESDA Programs
+              </button>
+              <button 
+                class="modal-tab" 
+                :class="{ active: activeCourseTab === 'driving' }" 
+                @click="activeCourseTab = 'driving'"
+              >
+                <font-awesome-icon icon="fas fa-car" />
+                Driving Courses
+              </button>
+            </div>
+
+            <!-- Scrollable Modal Body -->
+            <div class="modal-body-scrollable">
+              <div class="modal-stats" v-if="activeCourseTab === 'tesda'">
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">{{ tesdaCourses.length }}</span>
+                  <span class="modal-stat-label">Available Courses</span>
+                </div>
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">NC II/III</span>
+                  <span class="modal-stat-label">Certification Levels</span>
+                </div>
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">Free</span>
+                  <span class="modal-stat-label">Scholarship Available</span>
+                </div>
+              </div>
+
+              <div class="modal-stats" v-else>
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">{{ drivingCourses.length }}</span>
+                  <span class="modal-stat-label">Course Types</span>
+                </div>
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">TDC/PDC</span>
+                  <span class="modal-stat-label">Course Categories</span>
+                </div>
+                <div class="modal-stat-item">
+                  <span class="modal-stat-value">LTO</span>
+                  <span class="modal-stat-label">Accredited</span>
+                </div>
+              </div>
+
+              <div class="modal-section-title">
+                <font-awesome-icon :icon="activeCourseTab === 'tesda' ? 'fas fa-list-ul' : 'fas fa-road'" />
+                <span>{{ activeCourseTab === 'tesda' ? 'Available TESDA Programs' : 'Driving Course Offerings' }}</span>
+              </div>
+
+              <div class="modal-table">
+                <template v-if="activeCourseTab === 'tesda'">
+                  <div 
+                    class="modal-row" 
+                    v-for="(course, index) in tesdaCourses" 
+                    :key="course.code"
+                    :style="{ animationDelay: `${index * 0.05}s` }"
+                  >
+                    <div class="modal-course-info">
+                      <div class="modal-course-name">{{ course.name }}</div>
+                      <div class="modal-course-meta">
+                        <span class="modal-course-code">{{ course.code }}</span>
+                        <span class="modal-course-badge">TESDA Accredited</span>
+                      </div>
+                    </div>
+                    <button class="modal-course-action">
+                      <font-awesome-icon icon="fas fa-chevron-right" />
+                    </button>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div 
+                    class="modal-row" 
+                    v-for="(course, index) in drivingCourses" 
+                    :key="course.code"
+                    :style="{ animationDelay: `${index * 0.05}s` }"
+                  >
+                    <div class="modal-course-info">
+                      <div class="modal-course-name upper">{{ course.name }}</div>
+                      <div class="modal-course-meta">
+                        <span class="modal-course-code">{{ course.code }}</span>
+                        <span class="modal-course-badge driving">LTO Accredited</span>
+                      </div>
+                    </div>
+                    <button class="modal-course-action">
+                      <font-awesome-icon icon="fas fa-chevron-right" />
+                    </button>
+                  </div>
+                </template>
+              </div>
+
+              <div class="modal-info-box">
+                <font-awesome-icon icon="fas fa-info-circle" />
+                <span>All courses include certification upon completion. Contact us for schedule availability.</span>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-foot">
+              <div class="modal-foot-info">
+                <font-awesome-icon icon="fas fa-clock" />
+                <span>Training slots available</span>
+              </div>
+              <div class="modal-foot-actions">
+                <template v-if="activeCourseTab === 'tesda'">
+                  <router-link to="/login?track=tesda" class="btn btn-outline btn-small">
+                    <font-awesome-icon icon="fas fa-sign-in-alt" />
+                    Login
+                  </router-link>
+                  <router-link to="/signup?track=tesda" class="btn btn-primary btn-small">
+                    <font-awesome-icon icon="fas fa-user-plus" />
+                    Sign Up
+                  </router-link>
+                </template>
+                <template v-else>
+                  <router-link to="/login?track=driving" class="btn btn-outline btn-small">
+                    <font-awesome-icon icon="fas fa-sign-in-alt" />
+                    Login
+                  </router-link>
+                  <router-link to="/signup?track=driving" class="btn btn-primary btn-small">
+                    <font-awesome-icon icon="fas fa-user-plus" />
+                    Sign Up
+                  </router-link>
+                </template>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'LandingPage',
+  name: "LandingPage",
   data() {
     return {
       mobileMenuOpen: false,
-      currentYear: new Date().getFullYear()
-    }
+      currentYear: new Date().getFullYear(),
+
+      // Modal state
+      coursesModalOpen: false,
+      activeCourseTab: "tesda",
+
+      tesdaCourses: [
+        { name: "Organic Agriculture Production NC II", code: "OAP-NC2" },
+        { name: "Animal Production (Swine) NC II", code: "APS-NC2" },
+        { name: "Scaffolding Works (Supported Type Scaffold) NC II", code: "SCA-NC2" },
+        { name: "Agricultural Crops Production NC II", code: "ACP-NC2" },
+        { name: "Motorcycle/ Small Engine Servicing NC II", code: "MSE-NC2" },
+        { name: "Bread And Pastry Production NC II", code: "BPP-NC2" },
+        { name: "Driving NC II", code: "DRV-NC2" },
+        { name: "Food and Beverage Services NC II", code: "FBS-NC2" },
+        { name: "Events Management Services NC III", code: "EMS-NC3" },
+      ],
+
+      drivingCourses: [
+        { name: "PRACTICAL DRIVING COURSE (AB)", code: "PDC-AB" },
+        { name: "PRACTICAL DRIVING COURSE (B)", code: "PDC-B" },
+        { name: "PRACTICAL DRIVING COURSE (A)", code: "PDC-A" },
+        { name: "THEORETICAL DRIVING COURSE", code: "TDC" },
+      ],
+    };
   },
   mounted() {
-    // Add scroll effect to navbar
-    window.addEventListener('scroll', this.handleScroll)
+    window.addEventListener("scroll", this.handleScroll);
+    window.addEventListener("keydown", this.onKeydown);
   },
   beforeUnmount() {
-    window.removeEventListener('scroll', this.handleScroll)
+    window.removeEventListener("scroll", this.handleScroll);
+    window.removeEventListener("keydown", this.onKeydown);
   },
   methods: {
     handleScroll() {
-      const navbar = document.querySelector('.navbar')
-      if (window.scrollY > 50) {
-        navbar.classList.add('scrolled')
-      } else {
-        navbar.classList.remove('scrolled')
-      }
+      const navbar = document.querySelector(".navbar");
+      if (!navbar) return;
+      if (window.scrollY > 50) navbar.classList.add("scrolled");
+      else navbar.classList.remove("scrolled");
     },
     toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    }
-  }
-}
+      this.mobileMenuOpen = !this.mobileMenuOpen;
+    },
+
+    openCoursesModal(tab) {
+      this.activeCourseTab = tab;
+      this.coursesModalOpen = true;
+      document.body.style.overflow = "hidden";
+    },
+    closeCoursesModal() {
+      this.coursesModalOpen = false;
+      document.body.style.overflow = "";
+    },
+    onKeydown(e) {
+      if (e.key === "Escape" && this.coursesModalOpen) this.closeCoursesModal();
+    },
+  },
+};
 </script>
 
 <style scoped>
 /* Base Styles */
 .landing-page {
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   color: #ffffff;
   min-height: 100vh;
   position: relative;
@@ -884,7 +1087,7 @@ export default {
 }
 
 .nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -961,12 +1164,6 @@ export default {
   background: #f9fafb;
   color: #059669;
   border-left-color: #10b981;
-}
-
-.dropdown-item font-awesome-icon {
-  width: 20px;
-  text-align: center;
-  color: #10b981;
 }
 
 .btn {
@@ -1046,12 +1243,6 @@ export default {
   color: #059669;
 }
 
-.mobile-nav-link font-awesome-icon {
-  width: 20px;
-  text-align: center;
-}
-
-/* Mobile Authentication Section */
 .mobile-auth-section {
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
@@ -1071,7 +1262,7 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-/* Hero Section */
+/* Hero */
 .hero {
   padding: 12rem 0 6rem;
   position: relative;
@@ -1088,7 +1279,7 @@ export default {
 }
 
 .hero-content {
-  max-width: 600px;
+  max-width: 650px;
 }
 
 .badge {
@@ -1115,8 +1306,13 @@ export default {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .hero-title {
@@ -1138,51 +1334,67 @@ export default {
 .hero-description {
   font-size: 1.125rem;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   line-height: 1.7;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Quick Authentication in Hero */
-.quick-auth {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 1.5rem;
-  margin: 2rem 0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Quick Auth Grid */
+.quick-auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(10px);
+  margin: 1.75rem 0;
 }
 
-.quick-auth-group {
-  margin-bottom: 1rem;
+.quick-auth-box {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 1rem;
+  transition: transform 0.25s ease, background 0.25s ease;
 }
 
-.quick-auth-group:last-child {
-  margin-bottom: 0;
+.quick-auth-box:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .quick-auth-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   color: white;
   font-size: 1rem;
-  margin-bottom: 0.75rem;
-  font-weight: 600;
+  margin-bottom: 0.35rem;
+  font-weight: 800;
 }
 
 .quick-auth-title font-awesome-icon {
   color: #10b981;
 }
 
-.quick-auth-actions {
-  display: flex;
-  gap: 0.75rem;
+.quick-auth-sub {
+  margin: 0 0 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
 }
 
+.quick-auth-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* Stats */
 .hero-stats {
   display: flex;
   gap: 3rem;
+  margin-top: 1.5rem;
 }
 
 .stat {
@@ -1194,7 +1406,6 @@ export default {
   font-weight: 700;
   color: #10b981;
   margin-bottom: 0.25rem;
-  font-feature-settings: "tnum";
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -1202,10 +1413,9 @@ export default {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.875rem;
   font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Hero Visual - Fixed */
+/* Hero Visual */
 .hero-visual {
   position: relative;
   height: 500px;
@@ -1214,7 +1424,6 @@ export default {
   justify-content: center;
 }
 
-/* Dashboard Preview - Centered and Fixed */
 .dashboard-preview {
   position: relative;
   width: 340px;
@@ -1223,9 +1432,7 @@ export default {
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   z-index: 50;
-  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  margin: 0 auto;
 }
 
 .dashboard-header {
@@ -1241,20 +1448,17 @@ export default {
   display: flex;
   gap: 0.5rem;
 }
-
 .dashboard-dots span {
   width: 10px;
   height: 10px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
 }
-
 .dashboard-title {
   font-weight: 600;
   font-size: 1rem;
   flex: 1;
 }
-
 .dashboard-badge {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.75rem;
@@ -1298,7 +1502,6 @@ export default {
   height: 100%;
   background: linear-gradient(90deg, #10b981, #34d399);
   border-radius: 4px;
-  transition: width 1s ease-in-out;
 }
 
 .quick-stats {
@@ -1315,11 +1518,6 @@ export default {
   padding: 0.75rem;
   background: #f9fafb;
   border-radius: 10px;
-  transition: transform 0.3s;
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
 }
 
 .stat-icon {
@@ -1336,17 +1534,11 @@ export default {
 .stat-icon.docs {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
-
 .stat-icon.sessions {
   background: linear-gradient(135deg, #10b981, #059669);
 }
-
 .stat-icon.exams {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-}
-
-.stat-info {
-  flex: 1;
 }
 
 .stat-value {
@@ -1356,25 +1548,21 @@ export default {
   line-height: 1;
   margin-bottom: 0.125rem;
 }
-
 .stat-label {
   color: #6b7280;
   font-size: 0.75rem;
-  text-shadow: none;
 }
 
 .recent-activity {
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
-
 .activity-title {
   color: #374151;
   font-size: 0.875rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
 }
-
 .activity-item {
   display: flex;
   align-items: center;
@@ -1383,17 +1571,15 @@ export default {
   font-size: 0.75rem;
   margin-bottom: 0.5rem;
 }
-
 .activity-item font-awesome-icon {
   color: #10b981;
   font-size: 0.75rem;
 }
 
-/* Clean Floating Cards - NO GREEN TOP */
+/* Floating cards */
 .floating-card {
   position: absolute;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 12px;
   padding: 1rem;
@@ -1406,30 +1592,15 @@ export default {
   animation: floatSimple 6s ease-in-out infinite;
 }
 
-/* REMOVED the green top line from floating cards */
-/* .floating-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #10b981, #34d399);
-  border-radius: 12px 12px 0 0;
-} */
-
 .card-1 {
   top: 15%;
   left: 5%;
-  animation-delay: 0s;
 }
-
 .card-2 {
   top: 60%;
   right: 5%;
   animation-delay: 2s;
 }
-
 .card-3 {
   bottom: 20%;
   left: 15%;
@@ -1437,8 +1608,13 @@ export default {
 }
 
 @keyframes floatSimple {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .floating-icon {
@@ -1454,32 +1630,16 @@ export default {
   flex-shrink: 0;
 }
 
-.floating-content {
-  flex: 1;
-  min-width: 0;
-}
-
 .floating-card h4 {
   color: #111827;
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
-  line-height: 1.2;
 }
-
 .floating-card p {
   color: #6b7280;
   font-size: 0.75rem;
-  line-height: 1.2;
   margin: 0;
-}
-
-/* Ensure floating cards are always on top */
-.floating-card:hover {
-  transform: scale(1.05);
-  z-index: 200;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-  transition: all 0.3s ease;
 }
 
 /* Sections */
@@ -1487,15 +1647,12 @@ export default {
   max-width: 1280px;
   margin: 0 auto;
   padding: 6rem 2rem;
-  position: relative;
 }
 
 .section-header {
   text-align: center;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto 4rem;
-  position: relative;
-  z-index: 1;
 }
 
 .section-label {
@@ -1509,7 +1666,6 @@ export default {
   background: rgba(16, 185, 129, 0.1);
   padding: 0.5rem 1rem;
   border-radius: 50px;
-  backdrop-filter: blur(10px);
 }
 
 .section-title {
@@ -1517,7 +1673,6 @@ export default {
   font-weight: 700;
   color: white;
   margin-bottom: 1rem;
-  line-height: 1.2;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -1525,7 +1680,6 @@ export default {
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.125rem;
   line-height: 1.7;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Programs */
@@ -1575,7 +1729,6 @@ export default {
   border-radius: 50px;
   font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .program-header {
@@ -1594,7 +1747,6 @@ export default {
   justify-content: center;
   font-size: 1.75rem;
   color: white;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .program-icon.tesda {
@@ -1616,7 +1768,6 @@ export default {
   border-radius: 50px;
   font-size: 0.75rem;
   font-weight: 500;
-  backdrop-filter: blur(10px);
 }
 
 .program-title {
@@ -1624,7 +1775,6 @@ export default {
   font-weight: 700;
   color: white;
   margin-bottom: 1rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .program-description {
@@ -1645,32 +1795,19 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.95rem;
 }
 
 .program-features font-awesome-icon {
   color: #10b981;
   margin-top: 0.2rem;
-  flex-shrink: 0;
 }
 
-/* Program Authentication */
 .program-auth {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 1rem;
   margin: 1.5rem 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.auth-title {
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .auth-actions {
@@ -1691,15 +1828,18 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: color 0.3s;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-link:hover {
   color: #34d399;
 }
 
-/* Features */
+/* Features - FIXED: Centered icons */
+.features {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1710,10 +1850,14 @@ export default {
 .feature-item {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 15px;
-  padding: 2rem;
+  padding: 2rem 2rem 2rem 2rem;
   transition: all 0.3s;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .feature-item:hover {
@@ -1723,18 +1867,30 @@ export default {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
 
+.feature-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
 .feature-icon {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 12px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
   color: white;
-  font-size: 1.5rem;
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+  font-size: 1.75rem;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover .feature-icon {
+  transform: scale(1.1);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
 }
 
 .feature-item h3 {
@@ -1742,19 +1898,23 @@ export default {
   font-weight: 600;
   color: white;
   margin-bottom: 0.75rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 .feature-item p {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
+  text-align: center;
+  margin: 0;
 }
 
-/* How It Works */
+/* How it works - UPDATED with your design */
 .how-it-works {
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .steps-container {
@@ -1794,6 +1954,12 @@ export default {
   color: white;
   font-size: 2rem;
   box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.step:hover .step-icon {
+  transform: rotate(5deg) scale(1.05);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
 }
 
 .step h3 {
@@ -1809,32 +1975,7 @@ export default {
   font-size: 0.95rem;
   max-width: 200px;
   margin: 0 auto;
-}
-
-.step-line {
-  position: absolute;
-  top: 1px;
-  left: 25%;
-  right: 25%;
-  height: 2px;
-  background: rgba(16, 185, 129, 0.3);
-  z-index: 1;
-}
-
-.step-line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  background: linear-gradient(90deg, #10b981, #059669);
-  animation: lineProgress 8s ease-in-out infinite;
-}
-
-@keyframes lineProgress {
-  0%, 100% { width: 0; }
-  50% { width: 100%; }
+  line-height: 1.5;
 }
 
 .process-visual {
@@ -1853,6 +1994,12 @@ export default {
   background: linear-gradient(90deg, #10b981, #059669);
   transform: translateY(-50%);
   border-radius: 2px;
+  animation: lineGlow 3s ease-in-out infinite;
+}
+
+@keyframes lineGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
 }
 
 .process-point {
@@ -1865,6 +2012,12 @@ export default {
   border-radius: 50%;
   transform: translateY(-50%);
   box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+  animation: pointPulse 2s ease-in-out infinite;
+}
+
+@keyframes pointPulse {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.2); }
 }
 
 .process-point::after {
@@ -1884,7 +2037,7 @@ export default {
 .point-3 { left: 64%; }
 .point-4 { left: 90%; }
 
-/* CTA */
+/* CTA - UPDATED with your design */
 .cta {
   background: rgba(16, 185, 129, 0.9);
   padding: 6rem 0;
@@ -1892,15 +2045,6 @@ export default {
   overflow: hidden;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.cta-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  text-align: center;
-  position: relative;
-  z-index: 2;
 }
 
 .logo-watermark {
@@ -1931,6 +2075,15 @@ export default {
   filter: none;
 }
 
+.cta-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
 .cta h2 {
   font-size: 2.5rem;
   font-weight: 700;
@@ -1949,6 +2102,9 @@ export default {
   position: relative;
   z-index: 2;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cta-actions {
@@ -1964,6 +2120,12 @@ export default {
   color: #059669;
 }
 
+.cta .btn-primary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
 .cta .btn-outline {
   background: transparent;
   color: white;
@@ -1973,9 +2135,10 @@ export default {
 .cta .btn-outline:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: white;
+  transform: translateY(-2px);
 }
 
-/* Footer */
+/* Footer - UPDATED with your design */
 .footer {
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
@@ -2084,6 +2247,383 @@ export default {
   color: #10b981;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+/* ========== ENHANCED MODAL STYLES ========== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal-card {
+  width: min(800px, 100%);
+  max-height: 85vh;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-head {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.modal-title h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.modal-title p {
+  margin: 0.25rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.modal-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-icon.tesda {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+.modal-icon.driving {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.modal-close {
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.modal-close:hover {
+  transform: scale(1.05);
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.25rem 2rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-tab {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  flex: 0 1 auto;
+}
+
+.modal-tab:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.modal-tab.active {
+  background: #10b981;
+  border-color: #059669;
+  color: white;
+}
+
+.modal-tab.active svg {
+  color: white;
+}
+
+/* Scrollable Body */
+.modal-body-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  background: white;
+  max-height: 400px;
+  scrollbar-width: thin;
+  scrollbar-color: #10b981 #e5e7eb;
+}
+
+/* Custom scrollbar */
+.modal-body-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 10px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
+
+.modal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.modal-stat-item {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.modal-stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #10b981;
+  margin-bottom: 0.25rem;
+}
+
+.modal-stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #111827;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-section-title svg {
+  color: #10b981;
+}
+
+.modal-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: #f9fafb;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  animation: slideIn 0.3s ease forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-row:hover {
+  background: white;
+  border-color: #10b981;
+  transform: translateX(5px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.1);
+}
+
+.modal-course-info {
+  flex: 1;
+}
+
+.modal-course-name {
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.35rem;
+  font-size: 1rem;
+}
+
+.modal-course-name.upper {
+  text-transform: uppercase;
+}
+
+.modal-course-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-course-code {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 600;
+  background: #e5e7eb;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.modal-course-badge {
+  font-size: 0.7rem;
+  color: #10b981;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.modal-course-badge.driving {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.modal-course-action {
+  background: white;
+  border: 1px solid #e5e7eb;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-course-action:hover {
+  background: #10b981;
+  border-color: #059669;
+  color: white;
+  transform: scale(1.05);
+}
+
+.modal-info-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #047857;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.modal-info-box svg {
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.modal-foot {
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-foot-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.modal-foot-info svg {
+  color: #10b981;
+}
+
+.modal-foot-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Modal Animations */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.modal-zoom-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.modal-zoom-enter-from,
+.modal-zoom-leave-to {
+  transform: scale(0.96) translateY(10px);
+  opacity: 0;
 }
 
 /* Responsive Design */
@@ -2219,6 +2759,18 @@ export default {
     flex-direction: column;
     gap: 0.5rem;
   }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .step {
+    width: 100%;
+  }
+  
+  .step p {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2243,7 +2795,7 @@ export default {
     gap: 1.5rem;
   }
   
-  .programs-grid, .features-grid {
+  .programs-grid {
     grid-template-columns: 1fr;
   }
   
@@ -2268,6 +2820,53 @@ export default {
   
   .floating-card p {
     font-size: 0.7rem;
+  }
+  
+  .modal-head {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modal-tabs {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modal-body-scrollable {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modal-foot {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .modal-foot-info {
+    text-align: center;
+  }
+  
+  .modal-foot-actions {
+    width: 100%;
+  }
+  
+  .modal-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .cta-actions {
+    flex-direction: column;
+  }
+  
+  .cta h2 {
+    font-size: 2rem;
+  }
+  
+  .cta p {
+    font-size: 1rem;
+  }
+  
+  .logo-box-large {
+    width: 250px;
+    height: 250px;
+    padding: 40px;
   }
 }
 </style>

@@ -27,6 +27,7 @@ const AdminReports = () => import("../components/admin/AdminReports.vue");
 const AdminMockExam = () => import("../components/admin/AdminMockExam.vue");
 const AdminMessages = () => import("../components/admin/AdminMessages.vue");
 const AdminSettings = () => import("../components/admin/AdminSettings.vue");
+const AdminUsers = () => import("../components/admin/AdminUsers.vue");
 
 // ✅ Admin Reservations (lazy loaded)
 const AdminReservations = () =>
@@ -342,6 +343,12 @@ const routes = [
     path: "/admin-mockexam",
     name: "AdminMockExam",
     component: AdminMockExam,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin-users",
+    name: "AdminUsers",
+    component: AdminUsers,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
