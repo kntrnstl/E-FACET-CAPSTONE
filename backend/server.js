@@ -64,6 +64,17 @@ app.use(
   }),
 );
 
+app.use(
+  "/api/admin/certificates",
+  require("./src/routes/adminCertificateRoutes"),
+);
+
+app.use(
+  "/api/student/certificates",
+  require("./src/routes/studentCertificateRoutes"),
+);
+
+
 // ==============================
 // Static uploads
 // ==============================

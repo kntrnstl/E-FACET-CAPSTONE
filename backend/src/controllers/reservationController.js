@@ -747,7 +747,7 @@ exports.listMyReservations = async (req, res) => {
 exports.cancelMyReservation = async (req, res) => {
   try {
     const studentId = Number(req.session?.user_id);
-    const reservationId = Number(req.params?.reservationId);
+    const reservationId = Number(req.params?.id); 
 
     if (!studentId)
       return res
@@ -886,7 +886,7 @@ END AS admin_status
 // PUT /api/admin/reservations/:reservationId
 exports.updateReservationStatusAdmin = async (req, res) => {
   try {
-    const reservationId = Number(req.params?.reservationId);
+    const reservationId = Number(req.params?.id);
     const status = String(req.body?.status || "").toUpperCase();
 
     const allowed = [
@@ -1156,7 +1156,7 @@ exports.createWalkInReservation = async (req, res) => {
 // GET /api/admin/reservations/:reservationId/details
 exports.getReservationDetailsAdmin = async (req, res) => {
   try {
-    const reservationId = Number(req.params?.reservationId);
+    const reservationId = Number(req.params?.id);
     if (!reservationId) {
       return res
         .status(400)

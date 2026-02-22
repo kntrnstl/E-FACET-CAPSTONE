@@ -932,11 +932,20 @@ const withinFacetHours = (start, end) => {
 
 // ✅ course rules (Driving auto-duration)
 const COURSE_HOURS_RULES = [
-  { match: /PDC-?AB|\(AB\)/i, days: 2, hoursPerDay: 4 }, // 8-12 or 13-17
-  { match: /TDC/i, days: 2, hoursPerDay: 7.5 },         // example only kung gusto mo fixed
-  { match: /PDC-A/i, days: 1 },
-  { match: /PDC-B/i, days: 2 }, // kasi sabi mo "4 hours for 2 days"
+  // PDC A & B / PDC AB / PDC-AB / (AB)
+  { match: /\bPDC\s*-?\s*(A\s*&\s*B|A\s*AND\s*B|AB)\b|\(AB\)/i, days: 2, hoursPerDay: 4 },
+
+  // TDC
+  { match: /\bTDC\b|THEORETICAL.*DRIVING.*COURSE/i, days: 2, hoursPerDay: 7.5 },
+
+  // PDC A (allow: "PDC A", "PDC-A", "Practical ... A")
+  { match: /\bPDC\s*-?\s*A\b|PRACTICAL.*\bA\b/i, days: 1 },
+
+  // PDC B (allow: "PDC B", "PDC-B", "Practical ... B")
+  // ⚠️ NOTE: dapat 1 day lang ito (backend mo 1 day, 8 hours)
+  { match: /\bPDC\s*-?\s*B\b|PRACTICAL.*\bB\b/i, days: 1 },
 ];
+
 
 
 
@@ -1445,12 +1454,10 @@ export default {
 
     // ✅ show AM/PM option only when course is PDC A & B (2 days, 4h/day)
 const showPdcABTimeOptions = computed(() => {
-  return (
-    activeTrack.value === "driving" &&
-    !isEditing.value &&
-    String(activeCourse.value?.course_code || "").toUpperCase() === "PDC-AB"
-  );
+  const code = String(activeCourse.value?.course_code || "").toUpperCase().replace(/\s+/g, "");
+  return activeTrack.value === "driving" && !isEditing.value && (code === "PDC-AB".replace("-", "") || code === "PDCAB");
 });
+
 
 
 
@@ -1788,6 +1795,17 @@ if (!isEditing.value && activeTrack.value === "driving" && rule) {
       }
     }
   }
+
+  // ✅ SAFETY NET: if no rule matched, default to single-day rows using user times
+if (!isEditing.value && createRows.length === 0) {
+  // Use generated dates; if createMode is weekly/monthly, it will create 1 row per date
+  createRows = dates.map(d => ({
+    schedule_date: d,
+    start_time: String(formData.start_time || OPEN_TIME),
+    end_time: String(formData.end_time || "12:00"),
+  }));
+}
+
 }
 
 

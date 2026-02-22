@@ -618,9 +618,10 @@ export default {
       saving.value = true;
 
       try {
-        await api.put(`/admin/reservations/${selectedReservation.value.reservation_id}`, {
-          status: newStatus.value,
-        });
+await api.put(
+  `/admin/reservations/${selectedReservation.value.reservation_id}/status`,
+  { status: newStatus.value }
+);
 
         // ✅ refresh para admin_status recalculated sa backend
         await fetchReservations();

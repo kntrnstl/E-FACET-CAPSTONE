@@ -60,6 +60,10 @@ safe(
   "inline dashboard handler",
 );
 
+const adminReportsRoutes = require("./adminReportsRoutes");
+router.use("/reports", adminReportsRoutes);
+
+
 // ================= USER MANAGEMENT (NEW) =================
 safe(
   "get",
@@ -348,5 +352,8 @@ safe(
   drivingAssignController.upsertDrivingCourseInstructor,
   "drivingAssignController.upsertDrivingCourseInstructor",
 );
+
+
+
 
 module.exports = router;
